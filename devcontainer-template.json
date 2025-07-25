@@ -1,0 +1,34 @@
+{
+    "id": "go",
+    "version": "1.0.0",
+    "name": "go-logo",
+    "description": "A container handle logging things",
+    "documentationURL": "",
+    "licenseURL": "",
+    "options": {
+        "imageVariant": {
+            "type": "string",
+            "description": "Ubuntu version (use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon):",
+            "proposals": [
+                "jammy",
+                "focal",
+                "bionic"
+            ],
+            "default": "jammy"
+        },
+        "greeting": {
+            "type": "string",
+            "description": "Select a pre-made greeting, or enter your own",
+            "proposals": [
+                "hey",
+                "hello",
+                "hi",
+                "howdy"
+            ],
+            "default": "hey"
+        }
+    },
+    "platforms": [
+        "Any"
+    ]
+}
