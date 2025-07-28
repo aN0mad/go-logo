@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	logger "logo/logo"
 )
 
@@ -12,7 +13,8 @@ func main() {
 	logger.Init(
 		logger.AddSource(),
 		// logger.EnableTrace(),
-		// logger.SetLevel(slog.LevelDebug),
+		logger.SetLevel(slog.LevelInfo),
+		// logger.DisableColors(),
 		logger.AddFileOutput("logs/app.log", 10, 3, 30, true),
 	)
 

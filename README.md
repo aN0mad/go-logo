@@ -121,3 +121,7 @@ func main(){
     fmt.Println("Stopping channel logging")
 }
 ```
+
+# TODO
+- Update README with new example
+- Cleanup .bak files

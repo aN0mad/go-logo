@@ -18,11 +18,12 @@ var (
 	consoleOn     = true
 	outputs       []io.Writer
 	includeSource = false          // Include source file and line number in logs
-	includeTrace  = false          // Include stack trace in logs
+	includeTrace  = false          // Include stack trace in logs for log levels other than TRACE (FATAL)
 	logLevel      = slog.LevelInfo // Default log level
 	useJSONFormat = false
 	jsonPretty    = false // Whether to use pretty JSON formatting
 	attrOrder     = []string{"time", "level", "msg", "source"}
+	colorEnabled  = true // Whether to enable colored output in console logs
 )
 
 var logger *Logger
@@ -146,12 +147,24 @@ func SetLevel(level slog.Level) LoggerOption {
 	}
 }
 
+// DisableColors disables colored output in console logs.
+// This is useful for environments where ANSI color codes might cause issues.
+func DisableColors() LoggerOption {
+	return func() {
+		colorEnabled = false
+	}
+}
+
 // EnableTrace enables trace logging, which is a level below DEBUG.
 // This is useful for capturing detailed information during development or debugging.
 func EnableTrace() LoggerOption {
 	return func() {
 		includeTrace = true
-		logLevel = LevelTrace
+		// The issue might be here - we need to ensure this also lowers the log level
+		// if trace is enabled, the log level needs to be set low enough to show trace
+		if logLevel > LevelTrace {
+			logLevel = LevelTrace
+		}
 	}
 }
 
@@ -225,6 +238,9 @@ func WithContext(ctx context.Context) *Logger {
 
 // Trace logs with a level below DEBUG and includes a stack trace.
 func (l *Logger) Trace(msg string, attrs ...any) {
+	if !l.Enabled(context.Background(), LevelTrace) {
+		return
+	}
 	pc, file, line, _ := runtime.Caller(1)
 	fn := runtime.FuncForPC(pc).Name()
 
