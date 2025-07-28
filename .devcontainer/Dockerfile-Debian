@@ -1,0 +1,94 @@
+ARG USERNAME=root
+
+ARG BASEDEV_VERSION=v0.26.0
+ARG DEBIAN_VERSION=bullseye
+ARG GO_VERSION=1.23
+ARG GOMODIFYTAGS_VERSION=v1.17.0
+ARG GOPLAY_VERSION=v1.0.0
+ARG GOTESTS_VERSION=v1.6.0
+ARG DLV_VERSION=v1.23.1
+ARG MOCKERY_VERSION=v2.46.2
+ARG GOMOCK_VERSION=v1.6.0
+ARG MOCKGEN_VERSION=v1.6.0
+ARG GOPLS_VERSION=v0.16.2
+ARG GOFUMPT_VERSION=v0.7.0
+ARG GOLANGCILINT_VERSION=v1.63.4
+ARG IMPL_VERSION=v1.2.0
+ARG GOPKGS_VERSION=v2.1.2
+ARG KUBECTL_VERSION=v1.31.1
+ARG STERN_VERSION=v1.31.0
+ARG KUBECTX_VERSION=v0.9.5
+ARG KUBENS_VERSION=v0.9.5
+ARG HELM_VERSION=v3.16.2
+
+
+FROM golang:${GO_VERSION}-${DEBIAN_VERSION} AS go
+FROM qmcgaw/binpot:gomodifytags-${GOMODIFYTAGS_VERSION} AS gomodifytags
+FROM qmcgaw/binpot:goplay-${GOPLAY_VERSION} AS goplay
+FROM qmcgaw/binpot:gotests-${GOTESTS_VERSION} AS gotests
+FROM qmcgaw/binpot:dlv-${DLV_VERSION} AS dlv
+FROM qmcgaw/binpot:mockery-${MOCKERY_VERSION} AS mockery
+FROM qmcgaw/binpot:gomock-${GOMOCK_VERSION} AS gomock
+FROM qmcgaw/binpot:mockgen-${MOCKGEN_VERSION} AS mockgen
+FROM qmcgaw/binpot:gopls-${GOPLS_VERSION} AS gopls
+FROM qmcgaw/binpot:gofumpt-${GOFUMPT_VERSION} AS gofumpt
+FROM qmcgaw/binpot:golangci-lint-${GOLANGCILINT_VERSION} AS golangci-lint
+FROM qmcgaw/binpot:impl-${IMPL_VERSION} AS impl
+FROM qmcgaw/binpot:gopkgs-${GOPKGS_VERSION} AS gopkgs
+FROM qmcgaw/binpot:kubectl-${KUBECTL_VERSION} AS kubectl
+FROM qmcgaw/binpot:stern-${STERN_VERSION} AS stern
+FROM qmcgaw/binpot:kubectx-${KUBECTX_VERSION} AS kubectx
+FROM qmcgaw/binpot:kubens-${KUBENS_VERSION} AS kubens
+FROM qmcgaw/binpot:helm-${HELM_VERSION} AS helm
+
+FROM qmcgaw/basedevcontainer:${BASEDEV_VERSION}-debian
+ARG CREATED
+ARG COMMIT
+ARG VERSION=local
+ARG USERNAME
+ARG HOME
+
+COPY --from=go /usr/local/go /usr/local/go
+ENV GOPATH=$HOME/go
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH \
+    CGO_ENABLED=0 \
+    GO111MODULE=on
+WORKDIR $GOPATH
+
+# Install Debian packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends g++ wget && \
+    apt-get autoremove -y && \
+    apt-get clean -y && \
+    rm -r /var/cache/* /var/lib/apt/lists/*
+
+# Create GOPATH/bin and ensure it's owned by the user
+RUN mkdir -p $GOPATH/bin && chown -R ${USERNAME}:${USERNAME} $GOPATH
+
+# Shell setup
+COPY ./setup/.zshrc-specific /root/
+
+# Install golang tools
+COPY --from=gomodifytags /bin $GOPATH/bin/gomodifytags
+COPY --from=goplay        /bin        $GOPATH/bin/goplay
+COPY --from=gotests       /bin      $GOPATH/bin/gotests
+COPY --from=dlv           /bin           $GOPATH/bin/dlv
+COPY --from=mockery       /bin       $GOPATH/bin/mockery
+COPY --from=gomock        /bin        $GOPATH/bin/gomock
+COPY --from=mockgen       /bin       $GOPATH/bin/mockgen
+COPY --from=gopls         /bin       $GOPATH/bin/gopls
+COPY --from=gofumpt       /bin       $GOPATH/bin/gofumpt
+COPY --from=golangci-lint /bin $GOPATH/bin/golangci-lint
+COPY --from=impl          /bin          $GOPATH/bin/impl
+COPY --from=gopkgs        /bin        $GOPATH/bin/gopkgs
+
+USER $USERNAME
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended &> /dev/null
+ENV ENV="/root/.ashrc" \
+    ZSH=/root/.oh-my-zsh \
+    EDITOR=nano \
+    LANG=en_US.UTF-8
+RUN echo "/root/.zshrc" > /test.txt
+RUN printf 'ZSH_THEME="robbyrussell"\nENABLE_CORRECTION="false"\nplugins=(git copyfile extract colorize dotenv encode64 golang)\nsource $ZSH/oh-my-zsh.sh' > "/root/.zshrc"
+RUN echo "exec `which zsh`" > "/root/.ashrc"
+

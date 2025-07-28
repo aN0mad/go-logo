@@ -1,0 +1,40 @@
+{
+	"name": "go-logo",
+	"build": {
+		"dockerfile": "Dockerfile-Debian"
+		
+	},
+
+	// 👇 Features to add to the Dev Container. More info: https://containers.dev/implementors/features.
+	// "features": {},
+
+	// 👇 Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// 👇 Use 'postCreateCommand' to run commands after the container is created.
+	//"postCreateCommand": "cat /usr/local/etc/greeting.txt"
+
+	// 👇 Configure tool-specific properties.
+	// "customizations": {},
+
+	// 👇 Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "root",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+	"workspaceFolder": "/workspace",
+	"customizations": {
+        "vscode": {
+			"extensions": [
+                "golang.go",
+				"Gruntfuggly.todo-tree", // Highlights TODO comments
+				"ms-vscode.go"
+			]
+		}
+	},
+	"shutdownAction": "stopContainer",
+	"mounts": [
+  		"type=bind,source=${env:SSH_AUTH_SOCK},target=/ssh-agent"
+	],
+	"remoteEnv": {
+		"SSH_AUTH_SOCK": "/ssh-agent"
+	}
+}
