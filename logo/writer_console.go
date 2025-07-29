@@ -56,26 +56,14 @@ func (cw *StyledConsoleWriter) Write(p []byte) (int, error) {
 	msg := string(p)
 	level := detectLevel(msg)
 
-	// Remove the source information from the message to avoid duplication
-	// This will remove "source=file.go:line" from the displayed message
-	cleanedMsg := removeSourceFromMessage(msg)
-
 	// If colors are disabled, use a simpler rendering
 	if !colorEnabled {
 		timestamp := time.Now().Format("15:04:05")
-
-		// Extract source information if present
-		sourceInfo := extractSource(cleanedMsg)
-		sourceText := ""
-		if sourceInfo != "" {
-			sourceText = " " + sourceInfo
-		}
-
-		line := fmt.Sprintf("[%s]%s %s", timestamp, sourceText, strings.TrimSpace(msg))
+		line := fmt.Sprintf("[%s] %s", timestamp, strings.TrimSpace(msg))
 		return fmt.Fprintln(cw.out, line)
 	}
 
-	// Color output below (existing code)
+	// Color output below
 	style, ok := logLevelStyles[level]
 	if !ok {
 		style = lipgloss.NewStyle().Foreground(lipgloss.Color("7")).Bold(true)
@@ -83,18 +71,54 @@ func (cw *StyledConsoleWriter) Write(p []byte) (int, error) {
 
 	timestamp := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(time.Now().Format("15:04:05"))
 
-	// Extract source information if present
-	sourceInfo := extractSource(msg)
-	sourceText := ""
-	if sourceInfo != "" {
-		sourceText = lipgloss.NewStyle().Foreground(lipgloss.Color("99")).Render(sourceInfo)
-		sourceText = " " + sourceText
-	}
-
 	styled := style.Render(strings.TrimSpace(msg))
-	line := fmt.Sprintf("[%s]%s %s", timestamp, sourceText, styled)
+	line := fmt.Sprintf("[%s] %s", timestamp, styled)
 	return fmt.Fprintln(cw.out, line)
 }
+
+// func (cw *StyledConsoleWriter) Write(p []byte) (int, error) {
+// 	msg := string(p)
+// 	level := detectLevel(msg)
+
+// 	// Remove the source information from the message to avoid duplication
+// 	// This will remove "source=file.go:line" from the displayed message
+// 	cleanedMsg := removeSourceFromMessage(msg)
+
+// 	// If colors are disabled, use a simpler rendering
+// 	if !colorEnabled {
+// 		timestamp := time.Now().Format("15:04:05")
+
+// 		// Extract source information if present
+// 		sourceInfo := extractSource(cleanedMsg)
+// 		sourceText := ""
+// 		if sourceInfo != "" {
+// 			sourceText = " " + sourceInfo
+// 		}
+
+// 		line := fmt.Sprintf("[%s]%s %s", timestamp, sourceText, strings.TrimSpace(msg))
+// 		return fmt.Fprintln(cw.out, line)
+// 	}
+
+// 	// Color output below (existing code)
+// 	style, ok := logLevelStyles[level]
+// 	if !ok {
+// 		style = lipgloss.NewStyle().Foreground(lipgloss.Color("7")).Bold(true)
+// 	}
+
+// 	timestamp := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(time.Now().Format("15:04:05"))
+
+// 	// Extract source information if present
+// 	sourceInfo := extractSource(msg)
+// 	sourceText := ""
+// 	if sourceInfo != "" {
+// 		sourceText = lipgloss.NewStyle().Foreground(lipgloss.Color("99")).Render(sourceInfo)
+// 		sourceText = " " + sourceText
+// 	}
+
+// 	styled := style.Render(strings.TrimSpace(msg))
+// 	line := fmt.Sprintf("[%s]%s %s", timestamp, sourceText, styled)
+// 	return fmt.Fprintln(cw.out, line)
+// }
 
 // detectLevel extracts the log level from a log message using the LEVEL=<LOG_LEVEL> pattern.
 // It dynamically matches against the known levels from the logLevelStyles map.
@@ -146,6 +170,6 @@ func extractSource(s string) string {
 // Returns the log message with source information removed
 func removeSourceFromMessage(msg string) string {
 	// Remove the source=file.go:line pattern from the message
-	re := regexp.MustCompile(`source=[^ ]+\s*`)
+	re := regexp.MustCompile(`(source=[^ ]+)`)
 	return re.ReplaceAllString(msg, "")
 }
