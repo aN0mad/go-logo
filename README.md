@@ -76,6 +76,3 @@ func main() {
 	log.Fatal("This is a fatal message - It will exit the program")
 }
 ```
-
-# TODO
-- Cleanup .bak files
