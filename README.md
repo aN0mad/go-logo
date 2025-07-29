@@ -50,6 +50,8 @@ func main() {
         logger.AddFileOutput("logs/app.log", 10, 3, 30, true), // Log to file with rotation
 	)
 
+    defer logger.Close() // Ensure all file writers are closed properly
+
     // Get the logger instance
 	log := logger.L()
 	fmt.Println("Initialized logger")
@@ -176,7 +178,7 @@ Check the examples directory for more detailed examples:
 - Comprehensive logger configuration
 
 ## Enhancements
-- Migrate from [Lumberjack](https://github.com/natefinch/lumberjack) to [timberjack](https://github.com/DeRuina/timberjack/)
+- Migrate from [Lumberjack](https://github.com/aN0mad/lumberjack) to [timberjack](https://github.com/DeRuina/timberjack/) for enhanced log file control
 
 ## Acknowledgments
 - [natefinch](https://github.com/natefinch) for the [Lumberjack](https://github.com/natefinch/lumberjack) package to handle log files and rotations
