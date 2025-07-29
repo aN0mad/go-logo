@@ -36,6 +36,8 @@ func main() {
 		logger.AddChannelOutput(logChan),
 	)
 
+	defer logger.Close() // Ensure all file writers are closed properly
+
 	log := logger.L()
 
 	log.Info("COMPREHENSIVE LOGGER EXAMPLE")

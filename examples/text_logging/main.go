@@ -21,6 +21,8 @@ func main() {
 		logger.AddFileOutput(logLocation, 10, 3, 30, true),
 	)
 
+	defer logger.Close() // Ensure all file writers are closed properly
+
 	log := logger.L()
 
 	log.Info("TEXT FORMAT LOGGER EXAMPLES")
