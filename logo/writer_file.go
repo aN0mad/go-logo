@@ -4,7 +4,7 @@
 // through the lumberjack package.
 package logger
 
-import "gopkg.in/natefinch/lumberjack.v2"
+import "github.com/aN0mad/lumberjack/v2"
 
 // NewLumberjackWriter creates a new lumberjack.Logger instance for file logging
 // with rotation capabilities.

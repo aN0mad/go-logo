@@ -3,8 +3,8 @@ module logo
 go 1.23.11
 
 require (
+	github.com/aN0mad/lumberjack/v2 v2.0.0
 	github.com/charmbracelet/lipgloss v1.0.0
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (
