@@ -14,6 +14,8 @@ func main() {
 		logger.AddFileOutput("logs/app.log", 10, 3, 30, true), // Log to file with rotation
 	)
 
+	defer logger.Close() // Ensure all file writers are closed properly
+
 	log := logger.L()
 	fmt.Println("Initialized logger")
 

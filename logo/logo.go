@@ -40,6 +40,8 @@ import (
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/aN0mad/lumberjack/v2"
 )
 
 var (
@@ -52,7 +54,8 @@ var (
 	useJSONFormat = false
 	jsonPretty    = false // Whether to use pretty JSON formatting
 	attrOrder     = []string{"time", "level", "msg", "source"}
-	colorEnabled  = true // Whether to enable colored output in console logs
+	colorEnabled  = true               // Whether to enable colored output in console logs
+	fileWriters   []*lumberjack.Logger // List of file writers for proper closing
 )
 
 var logger *Logger
@@ -244,7 +247,32 @@ func AddFileOutput(path string, maxSize, backups, age int, compress bool) Logger
 	return func() {
 		lj := NewLumberjackWriter(path, maxSize, backups, age, compress)
 		outputs = append(outputs, lj)
+		fileWriters = append(fileWriters, lj) // Track the writer for closing
 	}
+}
+
+// Close properly closes all resources used by the logger.
+// This ensures that all log messages are flushed and file handles are closed.
+// It should be called before the application exits.
+//
+// Returns any error encountered while closing resources
+func Close() error {
+	mu.Lock()
+	defer mu.Unlock()
+
+	var lastErr error
+
+	// Close each file writer
+	for _, fw := range fileWriters {
+		if err := fw.Close(); err != nil {
+			lastErr = err
+		}
+	}
+
+	// Clear the writers list
+	fileWriters = nil
+
+	return lastErr
 }
 
 // AddChannelOutput adds a channel output to the logger.
