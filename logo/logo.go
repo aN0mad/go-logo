@@ -398,7 +398,6 @@ func normalizeAttrs(args ...any) []slog.Attr {
 	var attrs []slog.Attr
 	i := 0
 	for i < len(args) {
-		fmt.Println("Processing arg:", args[i])
 		switch v := args[i].(type) {
 		case slog.Attr:
 			attrs = append(attrs, v)
