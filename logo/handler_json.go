@@ -1,3 +1,7 @@
+// Package logger provides functionality for structured logging.
+//
+// This file contains the JSON handler implementation which formats log messages
+// as JSON objects, with optional pretty-printing.
 package logger
 
 import (
@@ -11,7 +15,9 @@ import (
 	"strings"
 )
 
-// JSONHandler is a custom handler that produces JSON output with configurable formatting
+// JSONHandler is a custom handler that produces JSON output with configurable formatting.
+// It implements the slog.Handler interface and supports ordering attributes
+// and pretty printing options.
 type JSONHandler struct {
 	out         io.Writer
 	opts        *slog.HandlerOptions
@@ -19,7 +25,14 @@ type JSONHandler struct {
 	attrOrder   []string
 }
 
-// NewJSONHandler creates a new JSON handler with optional pretty printing
+// NewJSONHandler creates a new JSON handler with optional pretty printing.
+//
+// Parameters:
+//   - out: The io.Writer where JSON log entries will be written
+//   - opts: Handler options including log level and attribute replacements
+//   - pretty: Whether to format the JSON with indentation for better readability
+//
+// Returns a slog.Handler implementation
 func NewJSONHandler(out io.Writer, opts *slog.HandlerOptions, pretty bool) slog.Handler {
 	// Define the attribute order: time, level, msg, source, followed by other attrs
 	// attrOrder := []string{"time", "level", "msg", "source"}
@@ -32,13 +45,27 @@ func NewJSONHandler(out io.Writer, opts *slog.HandlerOptions, pretty bool) slog.
 	}
 }
 
-// Enabled implements slog.Handler interface
+// Enabled implements slog.Handler interface.
+// It checks if the given log level should be processed based on the configured minimum level.
+//
+// Parameters:
+//   - ctx: The context for the logging operation
+//   - level: The log level to check
+//
+// Returns true if the log level should be processed, false otherwise
 func (h *JSONHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	minLevel := h.opts.Level.Level()
 	return level >= minLevel
 }
 
-// Handle implements slog.Handler interface
+// Handle implements slog.Handler interface.
+// It processes a log record and outputs it as JSON.
+//
+// Parameters:
+//   - ctx: The context for the logging operation
+//   - r: The log record to process
+//
+// Returns any error encountered during formatting or writing
 func (h *JSONHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Create an ordered map to maintain attribute order
 	orderedMap := make(map[string]interface{})
@@ -117,13 +144,25 @@ func (h *JSONHandler) Handle(ctx context.Context, r slog.Record) error {
 	return err
 }
 
-// WithAttrs implements slog.Handler interface
+// WithAttrs implements slog.Handler interface.
+// It returns a new handler with the given attributes.
+//
+// Parameters:
+//   - attrs: The attributes to add to the handler
+//
+// Returns a new handler instance with the attributes
 func (h *JSONHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	// Create a new handler with the same settings
 	return NewJSONHandler(h.out, h.opts, h.prettyPrint)
 }
 
-// WithGroup implements slog.Handler interface
+// WithGroup implements slog.Handler interface.
+// It returns a handler that adds the given group name to the attribute key path.
+//
+// Parameters:
+//   - name: The group name
+//
+// Returns a handler that adds the group name to the attribute key path
 func (h *JSONHandler) WithGroup(name string) slog.Handler {
 	// Groups are not fully implemented in this simple handler
 	return h

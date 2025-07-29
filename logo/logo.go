@@ -1,4 +1,33 @@
-// logo/logger.go
+// Package logger provides a flexible and extensible structured logging framework
+// built on top of Go's standard library slog package. It enhances slog with features
+// like customizable outputs, log levels including TRACE and FATAL, colorized console
+// output, file rotation, log channels, and support for JSON formatting.
+//
+// This package supports multiple logging backends simultaneously, including console,
+// files (with rotation via lumberjack), and channels for custom processing.
+//
+// Basic usage:
+//
+//	logger.Init(
+//		logger.SetLevel(slog.LevelInfo),
+//		logger.EnableTrace(),
+//		logger.AddSource(),
+//	)
+//
+//	log := logger.L()
+//	log.Info("Hello, world!", "user", "gopher")
+//
+// For file logging with rotation:
+//
+//	logger.Init(
+//		logger.AddFileOutput("/path/to/log.file", 10, 3, 30, true),
+//	)
+//
+// For JSON output:
+//
+//	logger.Init(
+//		logger.UseJSON(true), // true for pretty-printed JSON
+//	)
 package logger
 
 import (
@@ -28,11 +57,19 @@ var (
 
 var logger *Logger
 
+// Constants for additional log levels not provided by the standard slog package.
 const (
+	// LevelTrace is a level below DEBUG for extremely verbose diagnostic information
 	LevelTrace slog.Level = slog.LevelDebug - 5
+
+	// LevelFatal is a level above ERROR that indicates a fatal error condition
+	// which will cause the application to terminate after logging
 	LevelFatal slog.Level = slog.LevelError + 1
 )
 
+// LoggerOption is a functional option type for configuring the logger.
+// This allows for a flexible and extensible way to configure the logger
+// with various options.
 type LoggerOption func()
 
 // Logger is a wrapper around slog.Logger that provides additional functionality.
@@ -42,6 +79,20 @@ type Logger struct {
 }
 
 // Init initializes the logger with the given options.
+// It sets up outputs, formats, and handlers based on the provided options.
+// If no options are provided, it defaults to console output in text format.
+//
+// Options can be combined to customize the logger behavior:
+//
+//	logger.Init(
+//		logger.SetLevel(slog.LevelDebug),
+//		logger.EnableTrace(),
+//		logger.AddSource(),
+//		logger.AddFileOutput("/var/log/app.log", 10, 3, 30, true),
+//	)
+//
+// Parameters:
+//   - opts: A variadic list of LoggerOption functions to configure the logger
 func Init(opts ...LoggerOption) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -65,57 +116,10 @@ func Init(opts ...LoggerOption) {
 		}
 	}
 
-	// handler := slog.NewTextHandler(io.MultiWriter(outputs...), &slog.HandlerOptions{
-	// 	Level:     logLevel,
-	// 	AddSource: includeSource,
-	// 	ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-	// 		// If this is a level attribute, replace it with our custom string
-	// 		if a.Key == slog.LevelKey {
-	// 			level, ok := a.Value.Any().(slog.Level)
-	// 			if ok {
-	// 				if levelStr := levelToString(level); levelStr != "" {
-	// 					return slog.String("level", levelStr)
-	// 				}
-	// 			}
-	// 		}
-	// 		if includeSource && a.Key == slog.SourceKey {
-	// 			source, ok := a.Value.Any().(*slog.Source)
-	// 			if ok {
-	// 				// Format as "file:line" without the full path
-	// 				shortFile := source.File
-	// 				if lastSlash := strings.LastIndex(shortFile, "/"); lastSlash >= 0 {
-	// 					shortFile = shortFile[lastSlash+1:]
-	// 				}
-	// 				return slog.String("source", fmt.Sprintf("%s:%d", shortFile, source.Line))
-	// 			}
-	// 		}
-
-	// 		return a
-	// 	},
-	// })
-	// wrapped := NewLevelNameHandler(handler)
-	// logger = &Logger{slog.New(wrapped)}
 	handlerOptions := &slog.HandlerOptions{
 		Level:     logLevel,
-		AddSource: includeSource, // This controls whether source info is captured
+		AddSource: includeSource,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-
-			// Handle source attribute - make sure we don't rename it
-			// The standard key is "source" which matches what we want
-			// Just make the display format nicer
-			// Removed because while this is nice, if looking for the source file, the full verbose path is better
-			// if includeSource && a.Key == slog.SourceKey {
-			// 	source, ok := a.Value.Any().(*slog.Source)
-			// 	if ok {
-			// 		// Format as "file:line" without the full path
-			// 		shortFile := source.File
-			// 		if lastSlash := strings.LastIndex(shortFile, "/"); lastSlash >= 0 {
-			// 			shortFile = shortFile[lastSlash+1:]
-			// 		}
-			// 		// Keep the original key
-			// 		return slog.String(slog.SourceKey, fmt.Sprintf("%s:%d", shortFile, source.Line))
-			// 	}
-			// }
 
 			return a
 		},
@@ -124,6 +128,7 @@ func Init(opts ...LoggerOption) {
 	// Create the handler directly without wrapping
 	multiwriter := io.MultiWriter(outputs...)
 	var handler slog.Handler
+
 	// Choose the appropriate handler based on format
 	if useJSONFormat {
 		// Use JSON format
@@ -133,14 +138,17 @@ func Init(opts ...LoggerOption) {
 		handler = NewCustomTextHandler(multiwriter, handlerOptions)
 	}
 
-	// Use our level name handler
-	// levelHandler := NewLevelNameHandler(handler)
-
 	// Create the logger
 	logger = &Logger{slog.New(handler)}
 }
 
 // SetLevel sets the log level for the logger.
+// Only messages at or above this level will be logged.
+//
+// Parameters:
+//   - level: The minimum log level to capture
+//
+// Returns a LoggerOption that can be passed to Init()
 func SetLevel(level slog.Level) LoggerOption {
 	return func() {
 		logLevel = level
@@ -148,7 +156,10 @@ func SetLevel(level slog.Level) LoggerOption {
 }
 
 // DisableColors disables colored output in console logs.
-// This is useful for environments where ANSI color codes might cause issues.
+// This is useful for environments where ANSI color codes might cause issues,
+// such as when logging to files or in environments that don't support colors.
+//
+// Returns a LoggerOption that can be passed to Init()
 func DisableColors() LoggerOption {
 	return func() {
 		colorEnabled = false
@@ -157,18 +168,25 @@ func DisableColors() LoggerOption {
 
 // EnableTrace enables trace logging, which is a level below DEBUG.
 // This is useful for capturing detailed information during development or debugging.
+// When trace is enabled, the log level is automatically lowered to include trace messages.
+//
+// Returns a LoggerOption that can be passed to Init()
 func EnableTrace() LoggerOption {
 	return func() {
 		includeTrace = true
-		// The issue might be here - we need to ensure this also lowers the log level
-		// if trace is enabled, the log level needs to be set low enough to show trace
 		if logLevel > LevelTrace {
 			logLevel = LevelTrace
 		}
 	}
 }
 
-// UseConsole enables or disables the JSON console writer.
+// UseJSON configures the logger to output logs in JSON format.
+//
+// Parameters:
+//   - pretty: If true, JSON will be formatted with indentation for better readability.
+//     If false, JSON will be compact without extra whitespace.
+//
+// Returns a LoggerOption that can be passed to Init()
 func UseJSON(pretty bool) LoggerOption {
 	return func() {
 		useJSONFormat = true
@@ -176,7 +194,10 @@ func UseJSON(pretty bool) LoggerOption {
 	}
 }
 
-// AddSource enables adding source file and line information to log messages
+// AddSource enables adding source file and line information to log messages.
+// This helps with debugging by showing where each log message originated from.
+//
+// Returns a LoggerOption that can be passed to Init()
 func AddSource() LoggerOption {
 	return func() {
 		includeSource = true
@@ -184,6 +205,12 @@ func AddSource() LoggerOption {
 }
 
 // UseCustomHandler replaces the handler with a custom slog.Handler.
+// This allows for complete customization of the logging behavior.
+//
+// Parameters:
+//   - h: A custom slog.Handler implementation
+//
+// Returns a LoggerOption that can be passed to Init()
 func UseCustomHandler(h slog.Handler) LoggerOption {
 	return func() {
 		logger = &Logger{slog.New(h)}
@@ -191,7 +218,10 @@ func UseCustomHandler(h slog.Handler) LoggerOption {
 }
 
 // DisableConsole disables the console output.
-// This is useful for applications that do not require console logging, such as background services or daemons.
+// This is useful for applications that do not require console logging,
+// such as background services or daemons.
+//
+// Returns a LoggerOption that can be passed to Init()
 func DisableConsole() LoggerOption {
 	return func() {
 		consoleOn = false
@@ -200,7 +230,16 @@ func DisableConsole() LoggerOption {
 
 // AddFileOutput adds a file output to the logger.
 // It uses the Lumberjack package to manage log file rotation.
-// This allows for log files to be rotated based on size, number of backups, and age
+// This allows for log files to be rotated based on size, number of backups, and age.
+//
+// Parameters:
+//   - path: Path to the log file
+//   - maxSize: Maximum size of the log file in megabytes before it's rotated
+//   - backups: Maximum number of old log files to retain
+//   - age: Maximum number of days to retain old log files
+//   - compress: Whether to compress old log files
+//
+// Returns a LoggerOption that can be passed to Init()
 func AddFileOutput(path string, maxSize, backups, age int, compress bool) LoggerOption {
 	return func() {
 		lj := NewLumberjackWriter(path, maxSize, backups, age, compress)
@@ -210,6 +249,11 @@ func AddFileOutput(path string, maxSize, backups, age int, compress bool) Logger
 
 // AddChannelOutput adds a channel output to the logger.
 // This allows log messages to be sent to a channel for further processing or handling.
+//
+// Parameters:
+//   - ch: A channel of strings that will receive log messages
+//
+// Returns a LoggerOption that can be passed to Init()
 func AddChannelOutput(ch chan string) LoggerOption {
 	return func() {
 		outputs = append(outputs, NewChannelWriter(ch))
@@ -219,6 +263,8 @@ func AddChannelOutput(ch chan string) LoggerOption {
 // L returns the current logger instance.
 // It is safe to call concurrently and returns the same logger instance.
 // This is the main entry point for logging in the application.
+//
+// Returns the configured Logger instance
 func L() *Logger {
 	mu.RLock()
 	defer mu.RUnlock()
@@ -227,6 +273,11 @@ func L() *Logger {
 
 // WithContext returns a logger with the request ID from the context.
 // This should be customized based on your context handling for each application.
+//
+// Parameters:
+//   - ctx: A context.Context that may contain a request_id value
+//
+// Returns a Logger that includes the request ID in its attributes if present
 func WithContext(ctx context.Context) *Logger {
 	mu.RLock()
 	defer mu.RUnlock()
@@ -237,6 +288,13 @@ func WithContext(ctx context.Context) *Logger {
 }
 
 // Trace logs with a level below DEBUG and includes a stack trace.
+// This is useful for very detailed diagnostic information typically
+// needed during development or troubleshooting.
+//
+// Parameters:
+//   - msg: The message to log
+//   - attrs: Additional attributes to include with the log entry,
+//     provided as alternating keys and values
 func (l *Logger) Trace(msg string, attrs ...any) {
 	if !l.Enabled(context.Background(), LevelTrace) {
 		return
@@ -265,6 +323,14 @@ func (l *Logger) Trace(msg string, attrs ...any) {
 }
 
 // Fatal logs the message and exits the program with status 1.
+// This should be used for critical errors that require immediate termination.
+//
+// Parameters:
+//   - msg: The message to log
+//   - attrs: Additional attributes to include with the log entry,
+//     provided as alternating keys and values
+//
+// This function does not return as it calls os.Exit(1)
 func (l *Logger) Fatal(msg string, attrs ...any) {
 	pc, file, line, _ := runtime.Caller(1)
 	fn := runtime.FuncForPC(pc).Name()
@@ -295,6 +361,11 @@ func (l *Logger) Fatal(msg string, attrs ...any) {
 
 // normalizeAttrs normalizes the attributes passed to the logger.
 // It processes the attributes to ensure they are in the correct format for logging.
+//
+// Parameters:
+//   - args: Variable arguments that should be pairs of string keys and arbitrary values
+//
+// Returns a slice of slog.Attr representing the normalized attributes
 func normalizeAttrs(args ...any) []slog.Attr {
 	var attrs []slog.Attr
 	i := 0
@@ -321,7 +392,10 @@ func normalizeAttrs(args ...any) []slog.Attr {
 	return attrs
 }
 
-// timeNow returns the current time
+// timeNow returns the current time.
+// This function exists to make testing easier by allowing time to be mocked.
+//
+// Returns the current time
 func timeNow() time.Time {
 	return time.Now()
 }

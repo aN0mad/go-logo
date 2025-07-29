@@ -1,4 +1,7 @@
-// logo/writer_channel.go
+// Package logger provides functionality for structured logging.
+//
+// This file contains the channel writer implementation which allows log messages
+// to be sent to a Go channel for asynchronous processing.
 package logger
 
 import (
@@ -15,11 +18,23 @@ type ChannelWriter struct {
 // NewChannelWriter creates a new ChannelWriter instance.
 // It initializes the writer with the provided channel.
 // The channel should be buffered to handle log messages without blocking.
+//
+// Parameters:
+//   - ch: A channel of strings that will receive the log messages
+//
+// Returns a ChannelWriter that implements io.Writer
 func NewChannelWriter(ch chan string) *ChannelWriter {
 	return &ChannelWriter{ch: ch}
 }
 
 // Write implements the io.Writer interface for ChannelWriter.
+// It sends the log message to the channel in a non-blocking way.
+//
+// Parameters:
+//   - p: The byte slice containing the log message to write
+//
+// Returns the number of bytes processed and any error encountered.
+// Note that if the channel is full, the message will be dropped but no error is returned.
 func (cw *ChannelWriter) Write(p []byte) (int, error) {
 	msg := strings.TrimSpace(string(p))
 	if msg != "" {

@@ -1,4 +1,7 @@
-// logo/handler_custom.go
+// Package logger provides functionality for structured logging.
+//
+// This file contains the custom text handler implementation which formats
+// log messages in a human-readable text format with ordered attributes.
 package logger
 
 import (
@@ -11,14 +14,22 @@ import (
 	"strings"
 )
 
-// CustomTextHandler is a custom handler that produces text output with ordered attributes
+// CustomTextHandler is a custom handler that produces text output with ordered attributes.
+// It implements the slog.Handler interface and formats log messages in a consistent,
+// readable format with configurable attribute ordering.
 type CustomTextHandler struct {
 	out       io.Writer
 	opts      *slog.HandlerOptions
 	attrOrder []string
 }
 
-// NewCustomTextHandler creates a new text handler with ordered attributes
+// NewCustomTextHandler creates a new text handler with ordered attributes.
+//
+// Parameters:
+//   - out: The io.Writer where log entries will be written
+//   - opts: Handler options including log level and attribute replacements
+//
+// Returns a slog.Handler implementation
 func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler {
 	// Define the attribute order: time, level, msg, source, followed by other attrs
 	// attrOrder := []string{"time", "level", "msg", "source"}
@@ -30,13 +41,27 @@ func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler
 	}
 }
 
-// Enabled implements Handler.Enabled
+// Enabled implements Handler.Enabled.
+// It checks if the given log level should be processed based on the configured minimum level.
+//
+// Parameters:
+//   - ctx: The context for the logging operation
+//   - level: The log level to check
+//
+// Returns true if the log level should be processed, false otherwise
 func (h *CustomTextHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	minLevel := h.opts.Level.Level()
 	return level >= minLevel
 }
 
-// Handle implements Handler.Handle
+// Handle implements Handler.Handle.
+// It processes a log record and outputs it in text format.
+//
+// Parameters:
+//   - ctx: The context for the logging operation
+//   - r: The log record to process
+//
+// Returns any error encountered during formatting or writing
 func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Collect all attributes in a map for reordering
 	attrs := make(map[string]string)
@@ -123,18 +148,35 @@ func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 	return err
 }
 
-// WithAttrs implements Handler.WithAttrs
+// WithAttrs implements Handler.WithAttrs.
+// It returns a new handler with the given attributes.
+//
+// Parameters:
+//   - attrs: The attributes to add to the handler
+//
+// Returns a new handler instance with the attributes
 func (h *CustomTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return NewCustomTextHandler(h.out, h.opts)
 }
 
-// WithGroup implements Handler.WithGroup
+// WithGroup implements Handler.WithGroup.
+// It returns a handler that adds the given group name to the attribute key path.
+//
+// Parameters:
+//   - name: The group name
+//
+// Returns a handler that adds the group name to the attribute key path
 func (h *CustomTextHandler) WithGroup(name string) slog.Handler {
 	// Groups not implemented in this simple handler
 	return h
 }
 
 // levelToString converts a slog.Level to its string representation.
+//
+// Parameters:
+//   - l: The slog.Level to convert
+//
+// Returns the string representation of the log level, or empty string if not recognized
 func levelToString(l slog.Level) string {
 	switch l {
 	case LevelTrace:
