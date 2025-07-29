@@ -9,9 +9,9 @@ import (
 func main() {
 
 	logger.Init(
-		logger.AddSource(),
-		logger.SetLevel(slog.LevelDebug),
-		logger.AddFileOutput("logs/app.log", 10, 3, 30, true),
+		logger.AddSource(),                                    // Log source caller information
+		logger.SetLevel(slog.LevelDebug),                      // Set the minimum log level to Debug
+		logger.AddFileOutput("logs/app.log", 10, 3, 30, true), // Log to file with rotation
 	)
 
 	log := logger.L()
