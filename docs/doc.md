@@ -62,6 +62,7 @@ This file contains the file writer implementation which supports log rotation th
 ## Index
 
 - [Constants](<#constants>)
+- [func Close\(\) error](<#Close>)
 - [func Init\(opts ...LoggerOption\)](<#Init>)
 - [func NewCustomTextHandler\(out io.Writer, opts \*slog.HandlerOptions\) slog.Handler](<#NewCustomTextHandler>)
 - [func NewJSONHandler\(out io.Writer, opts \*slog.HandlerOptions, pretty bool\) slog.Handler](<#NewJSONHandler>)
@@ -114,8 +115,19 @@ const (
 )
 ```
 
+<a name="Close"></a>
+## func [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L259>)
+
+```go
+func Close() error
+```
+
+Close properly closes all resources used by the logger. This ensures that all log messages are flushed and file handles are closed. It should be called before the application exits.
+
+Returns any error encountered while closing resources
+
 <a name="Init"></a>
-## func [Init](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L96>)
+## func [Init](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L99>)
 
 ```go
 func Init(opts ...LoggerOption)
@@ -378,7 +390,7 @@ Parameters:
 Returns a handler that adds the group name to the attribute key path
 
 <a name="Logger"></a>
-## type [Logger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L77-L79>)
+## type [Logger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L80-L82>)
 
 Logger is a wrapper around slog.Logger that provides additional functionality. It allows for easy configuration of log outputs, levels, and custom handlers.
 
@@ -389,7 +401,7 @@ type Logger struct {
 ```
 
 <a name="L"></a>
-### func [L](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L268>)
+### func [L](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L296>)
 
 ```go
 func L() *Logger
@@ -400,7 +412,7 @@ L returns the current logger instance. It is safe to call concurrently and retur
 Returns the configured Logger instance
 
 <a name="WithContext"></a>
-### func [WithContext](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L281>)
+### func [WithContext](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L309>)
 
 ```go
 func WithContext(ctx context.Context) *Logger
@@ -415,7 +427,7 @@ Parameters:
 Returns a Logger that includes the request ID in its attributes if present
 
 <a name="Logger.Fatal"></a>
-### func \(\*Logger\) [Fatal](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L334>)
+### func \(\*Logger\) [Fatal](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L362>)
 
 ```go
 func (l *Logger) Fatal(msg string, attrs ...any)
@@ -431,7 +443,7 @@ Parameters:
 This function does not return as it calls os.Exit\(1\)
 
 <a name="Logger.Trace"></a>
-### func \(\*Logger\) [Trace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L298>)
+### func \(\*Logger\) [Trace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L326>)
 
 ```go
 func (l *Logger) Trace(msg string, attrs ...any)
@@ -445,7 +457,7 @@ Parameters:
 - attrs: Additional attributes to include with the log entry, provided as alternating keys and values
 
 <a name="LoggerOption"></a>
-## type [LoggerOption](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L73>)
+## type [LoggerOption](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L76>)
 
 LoggerOption is a functional option type for configuring the logger. This allows for a flexible and extensible way to configure the logger with various options.
 
@@ -454,7 +466,7 @@ type LoggerOption func()
 ```
 
 <a name="AddChannelOutput"></a>
-### func [AddChannelOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L257>)
+### func [AddChannelOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L285>)
 
 ```go
 func AddChannelOutput(ch chan string) LoggerOption
@@ -469,7 +481,7 @@ Parameters:
 Returns a LoggerOption that can be passed to Init\(\)
 
 <a name="AddFileOutput"></a>
-### func [AddFileOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L243>)
+### func [AddFileOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L246>)
 
 ```go
 func AddFileOutput(path string, maxSize, backups, age int, compress bool) LoggerOption
@@ -488,7 +500,7 @@ Parameters:
 Returns a LoggerOption that can be passed to Init\(\)
 
 <a name="AddSource"></a>
-### func [AddSource](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L201>)
+### func [AddSource](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L204>)
 
 ```go
 func AddSource() LoggerOption
@@ -499,7 +511,7 @@ AddSource enables adding source file and line information to log messages. This 
 Returns a LoggerOption that can be passed to Init\(\)
 
 <a name="DisableColors"></a>
-### func [DisableColors](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L163>)
+### func [DisableColors](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L166>)
 
 ```go
 func DisableColors() LoggerOption
@@ -510,7 +522,7 @@ DisableColors disables colored output in console logs. This is useful for enviro
 Returns a LoggerOption that can be passed to Init\(\)
 
 <a name="DisableConsole"></a>
-### func [DisableConsole](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L225>)
+### func [DisableConsole](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L228>)
 
 ```go
 func DisableConsole() LoggerOption
@@ -521,7 +533,7 @@ DisableConsole disables the console output. This is useful for applications that
 Returns a LoggerOption that can be passed to Init\(\)
 
 <a name="EnableTrace"></a>
-### func [EnableTrace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L174>)
+### func [EnableTrace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L177>)
 
 ```go
 func EnableTrace() LoggerOption
@@ -532,7 +544,7 @@ EnableTrace enables trace logging, which is a level below DEBUG. This is useful 
 Returns a LoggerOption that can be passed to Init\(\)
 
 <a name="SetLevel"></a>
-### func [SetLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L152>)
+### func [SetLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L155>)
 
 ```go
 func SetLevel(level slog.Level) LoggerOption
@@ -547,7 +559,7 @@ Parameters:
 Returns a LoggerOption that can be passed to Init\(\)
 
 <a name="UseCustomHandler"></a>
-### func [UseCustomHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L214>)
+### func [UseCustomHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L217>)
 
 ```go
 func UseCustomHandler(h slog.Handler) LoggerOption
@@ -562,7 +574,7 @@ Parameters:
 Returns a LoggerOption that can be passed to Init\(\)
 
 <a name="UseJSON"></a>
-### func [UseJSON](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L190>)
+### func [UseJSON](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L193>)
 
 ```go
 func UseJSON(pretty bool) LoggerOption
