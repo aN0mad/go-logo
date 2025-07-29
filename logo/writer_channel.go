@@ -44,10 +44,7 @@ func (cw *ChannelWriter) Write(p []byte) (int, error) {
 		default:
 			// Channel is full, drop message
 		}
-	} else {
-		// If the message is empty, we do not send it to the channel
-		// This prevents sending empty log messages
-		return 0, nil
 	}
+	// Always return original length, even if message is filtered
 	return len(p), nil
 }
