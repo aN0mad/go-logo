@@ -50,7 +50,7 @@ ARG HOME
 
 COPY --from=go /usr/local/go /usr/local/go
 ENV GOPATH=$HOME/go
-ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH \
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:/go/bin/:$PATH \
     CGO_ENABLED=0 \
     GO111MODULE=on
 WORKDIR $GOPATH
