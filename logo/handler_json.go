@@ -34,14 +34,12 @@ type JSONHandler struct {
 //
 // Returns a slog.Handler implementation
 func NewJSONHandler(out io.Writer, opts *slog.HandlerOptions, pretty bool) slog.Handler {
-	// Define the attribute order: time, level, msg, source, followed by other attrs
-	// attrOrder := []string{"time", "level", "msg", "source"}
 
 	return &JSONHandler{
 		out:         out,
 		opts:        opts,
 		prettyPrint: pretty,
-		attrOrder:   attrOrder,
+		attrOrder:   attrOrder, // Use the global attrOrder defined in this package
 	}
 }
 

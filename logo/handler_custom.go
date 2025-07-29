@@ -31,13 +31,11 @@ type CustomTextHandler struct {
 //
 // Returns a slog.Handler implementation
 func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler {
-	// Define the attribute order: time, level, msg, source, followed by other attrs
-	// attrOrder := []string{"time", "level", "msg", "source"}
 
 	return &CustomTextHandler{
 		out:       out,
 		opts:      opts,
-		attrOrder: attrOrder,
+		attrOrder: attrOrder, // Use the global attrOrder defined in this package
 	}
 }
 
