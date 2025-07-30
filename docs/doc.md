@@ -14,6 +14,10 @@ Package logger provides functionality for structured logging.
 
 This file contains the JSON handler implementation which formats log messages as JSON objects, with optional pretty\-printing.
 
+Package logger provides functionality for structured logging.
+
+This file contains functions to query and manipulate the current log level in the logger configuration.
+
 Package logger provides a flexible and extensible structured logging framework built on top of Go's standard library slog package. It enhances slog with features like customizable outputs, log levels including TRACE and FATAL, colorized console output, file rotation, log channels, and support for JSON formatting.
 
 This package supports multiple logging backends simultaneously, including console, files \(with rotation via lumberjack\), and channels for custom processing.
@@ -62,11 +66,14 @@ This file contains the file writer implementation which supports log rotation th
 ## Index
 
 - [Constants](<#constants>)
+- [Variables](<#variables>)
 - [func Close\(\) error](<#Close>)
+- [func GetCurrentLevel\(\) slog.Level](<#GetCurrentLevel>)
 - [func Init\(opts ...LoggerOption\)](<#Init>)
+- [func IsLevelEnabled\(level slog.Level\) bool](<#IsLevelEnabled>)
 - [func NewCustomTextHandler\(out io.Writer, opts \*slog.HandlerOptions\) slog.Handler](<#NewCustomTextHandler>)
 - [func NewJSONHandler\(out io.Writer, opts \*slog.HandlerOptions, pretty bool\) slog.Handler](<#NewJSONHandler>)
-- [func NewLumberjackWriter\(filename string, maxSize, backups, maxAge int, compress bool\) \*lumberjack.Logger](<#NewLumberjackWriter>)
+- [func NewLumberjackWriter\(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool\) \*lumberjack.Logger](<#NewLumberjackWriter>)
 - [type ChannelWriter](<#ChannelWriter>)
   - [func NewChannelWriter\(ch chan string\) \*ChannelWriter](<#NewChannelWriter>)
   - [func \(cw \*ChannelWriter\) Write\(p \[\]byte\) \(int, error\)](<#ChannelWriter.Write>)
@@ -82,16 +89,17 @@ This file contains the file writer implementation which supports log rotation th
   - [func \(h \*JSONHandler\) WithGroup\(name string\) slog.Handler](<#JSONHandler.WithGroup>)
 - [type Logger](<#Logger>)
   - [func L\(\) \*Logger](<#L>)
-  - [func WithContext\(ctx context.Context\) \*Logger](<#WithContext>)
   - [func \(l \*Logger\) Fatal\(msg string, attrs ...any\)](<#Logger.Fatal>)
   - [func \(l \*Logger\) Trace\(msg string, attrs ...any\)](<#Logger.Trace>)
 - [type LoggerOption](<#LoggerOption>)
   - [func AddChannelOutput\(ch chan string\) LoggerOption](<#AddChannelOutput>)
-  - [func AddFileOutput\(path string, maxSize, backups, age int, compress bool\) LoggerOption](<#AddFileOutput>)
+  - [func AddFileOutput\(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool\) LoggerOption](<#AddFileOutput>)
   - [func AddSource\(\) LoggerOption](<#AddSource>)
   - [func DisableColors\(\) LoggerOption](<#DisableColors>)
   - [func DisableConsole\(\) LoggerOption](<#DisableConsole>)
-  - [func EnableTrace\(\) LoggerOption](<#EnableTrace>)
+  - [func EnableLogLevelTrace\(\) LoggerOption](<#EnableLogLevelTrace>)
+  - [func EnableStackTraces\(\) LoggerOption](<#EnableStackTraces>)
+  - [func SetFileHandlerForTesting\(w io.Writer\) LoggerOption](<#SetFileHandlerForTesting>)
   - [func SetLevel\(level slog.Level\) LoggerOption](<#SetLevel>)
   - [func UseCustomHandler\(h slog.Handler\) LoggerOption](<#UseCustomHandler>)
   - [func UseJSON\(pretty bool\) LoggerOption](<#UseJSON>)
@@ -115,8 +123,16 @@ const (
 )
 ```
 
+## Variables
+
+<a name="Version"></a>Version represents the current version of the logger package. It follows semantic versioning \(MAJOR.MINOR.PATCH\).
+
+```go
+var Version = "1.0.0"
+```
+
 <a name="Close"></a>
-## func [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L259>)
+## func [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L316>)
 
 ```go
 func Close() error
@@ -124,10 +140,25 @@ func Close() error
 
 Close properly closes all resources used by the logger. This ensures that all log messages are flushed and file handles are closed. It should be called before the application exits.
 
-Returns any error encountered while closing resources
+Returns:
+
+- error: Any error encountered while closing resources
+
+<a name="GetCurrentLevel"></a>
+## func [GetCurrentLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/levels.go#L24>)
+
+```go
+func GetCurrentLevel() slog.Level
+```
+
+GetCurrentLevel returns the current minimum log level configured in the logger.
+
+Returns:
+
+- slog.Level: The current log level
 
 <a name="Init"></a>
-## func [Init](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L99>)
+## func [Init](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L129>)
 
 ```go
 func Init(opts ...LoggerOption)
@@ -150,8 +181,29 @@ Parameters:
 
 - opts: A variadic list of LoggerOption functions to configure the logger
 
+Returns:
+
+- None
+
+<a name="IsLevelEnabled"></a>
+## func [IsLevelEnabled](<https://github.com/aN0mad/go-logo/blob/main/logo/levels.go#L16>)
+
+```go
+func IsLevelEnabled(level slog.Level) bool
+```
+
+IsLevelEnabled checks if a log level is enabled based on the current logger configuration.
+
+Parameters:
+
+- level: The log level to check
+
+Returns:
+
+- bool: True if the level is enabled, false otherwise
+
 <a name="NewCustomTextHandler"></a>
-## func [NewCustomTextHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L33>)
+## func [NewCustomTextHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L36>)
 
 ```go
 func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler
@@ -164,7 +216,9 @@ Parameters:
 - out: The io.Writer where log entries will be written
 - opts: Handler options including log level and attribute replacements
 
-Returns a slog.Handler implementation
+Returns:
+
+- slog.Handler: A handler implementation for text\-formatted logs
 
 <a name="NewJSONHandler"></a>
 ## func [NewJSONHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L36>)
@@ -181,31 +235,35 @@ Parameters:
 - opts: Handler options including log level and attribute replacements
 - pretty: Whether to format the JSON with indentation for better readability
 
-Returns a slog.Handler implementation
+Returns:
+
+- slog.Handler: A handler implementation for JSON\-formatted logs
 
 <a name="NewLumberjackWriter"></a>
-## func [NewLumberjackWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_file.go#L20>)
+## func [NewLumberjackWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_file.go#L21>)
 
 ```go
-func NewLumberjackWriter(filename string, maxSize, backups, maxAge int, compress bool) *lumberjack.Logger
+func NewLumberjackWriter(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool) *lumberjack.Logger
 ```
 
-NewLumberjackWriter creates a new lumberjack.Logger instance for file logging with rotation capabilities.
+NewLumberjackWriter creates a new writer that writes to a file with rotation support. It uses the lumberjack library to provide log rotation capabilities.
 
 Parameters:
 
-- filename: Path to the log file
-- maxSize: Maximum size of the log file in megabytes before it's rotated
-- backups: Maximum number of old log files to retain
-- maxAge: Maximum number of days to retain old log files
-- compress: Whether to compress old log files
+- filepath: The path to the log file
+- maxSizeMB: Maximum size of the log file in megabytes before rotation
+- maxBackups: Maximum number of old log files to retain
+- maxAgeDays: Maximum number of days to retain old log files
+- compress: If true, rotated log files will be compressed using gzip
 
-Returns a configured lumberjack.Logger that implements io.Writer
+Returns:
+
+- \*lumberjack.Logger: A configured lumberjack logger that implements io.Writer
 
 <a name="ChannelWriter"></a>
-## type [ChannelWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L14-L16>)
+## type [ChannelWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L13-L15>)
 
-ChannelWriter is a custom writer that sends log messages to a channel. It implements the io.Writer interface, allowing it to be used with standard logging functions. This is useful for applications that need to collect log messages asynchronously or process them in a different way.
+ChannelWriter is an io.Writer that sends log messages to a channel. It can be used to pass log messages to custom processing routines.
 
 ```go
 type ChannelWriter struct {
@@ -214,39 +272,44 @@ type ChannelWriter struct {
 ```
 
 <a name="NewChannelWriter"></a>
-### func [NewChannelWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L26>)
+### func [NewChannelWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L24>)
 
 ```go
 func NewChannelWriter(ch chan string) *ChannelWriter
 ```
 
-NewChannelWriter creates a new ChannelWriter instance. It initializes the writer with the provided channel. The channel should be buffered to handle log messages without blocking.
+NewChannelWriter creates a new writer that sends log messages to the given channel.
 
 Parameters:
 
-- ch: A channel of strings that will receive the log messages
+- ch: The channel to which log messages will be sent
 
-Returns a ChannelWriter that implements io.Writer
+Returns:
+
+- \*ChannelWriter: A channel writer that implements io.Writer
 
 <a name="ChannelWriter.Write"></a>
-### func \(\*ChannelWriter\) [Write](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L38>)
+### func \(\*ChannelWriter\) [Write](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L37>)
 
 ```go
 func (cw *ChannelWriter) Write(p []byte) (int, error)
 ```
 
-Write implements the io.Writer interface for ChannelWriter. It sends the log message to the channel in a non\-blocking way.
+Write implements the io.Writer interface for ChannelWriter. It sends the log message to the channel associated with this writer.
 
 Parameters:
 
-- p: The byte slice containing the log message to write
+- p: The byte slice containing the log message
 
-Returns the number of bytes processed and any error encountered. Note that if the channel is full, the message will be dropped but no error is returned.
+Returns:
+
+- int: The number of bytes processed
+- error: Any error encountered during writing \(or nil if successful\)
 
 <a name="CustomTextHandler"></a>
-## type [CustomTextHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L20-L24>)
+## type [CustomTextHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L20-L26>)
 
-CustomTextHandler is a custom handler that produces text output with ordered attributes. It implements the slog.Handler interface and formats log messages in a consistent, readable format with configurable attribute ordering.
+CustomTextHandler is a slog.Handler that formats logs as structured text. It provides control over attribute ordering and supports all standard slog.Handler functionality.
 
 ```go
 type CustomTextHandler struct {
@@ -255,7 +318,7 @@ type CustomTextHandler struct {
 ```
 
 <a name="CustomTextHandler.Enabled"></a>
-### func \(\*CustomTextHandler\) [Enabled](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L52>)
+### func \(\*CustomTextHandler\) [Enabled](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L56>)
 
 ```go
 func (h *CustomTextHandler) Enabled(ctx context.Context, level slog.Level) bool
@@ -268,10 +331,12 @@ Parameters:
 - ctx: The context for the logging operation
 - level: The log level to check
 
-Returns true if the log level should be processed, false otherwise
+Returns:
+
+- bool: True if the log level should be processed, false otherwise
 
 <a name="CustomTextHandler.Handle"></a>
-### func \(\*CustomTextHandler\) [Handle](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L65>)
+### func \(\*CustomTextHandler\) [Handle](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L70>)
 
 ```go
 func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error
@@ -284,10 +349,12 @@ Parameters:
 - ctx: The context for the logging operation
 - r: The log record to process
 
-Returns any error encountered during formatting or writing
+Returns:
+
+- error: Any error encountered during formatting or writing
 
 <a name="CustomTextHandler.WithAttrs"></a>
-### func \(\*CustomTextHandler\) [WithAttrs](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L158>)
+### func \(\*CustomTextHandler\) [WithAttrs](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L171>)
 
 ```go
 func (h *CustomTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler
@@ -299,10 +366,12 @@ Parameters:
 
 - attrs: The attributes to add to the handler
 
-Returns a new handler instance with the attributes
+Returns:
+
+- slog.Handler: A new handler instance with the attributes
 
 <a name="CustomTextHandler.WithGroup"></a>
-### func \(\*CustomTextHandler\) [WithGroup](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L169>)
+### func \(\*CustomTextHandler\) [WithGroup](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L208>)
 
 ```go
 func (h *CustomTextHandler) WithGroup(name string) slog.Handler
@@ -314,12 +383,14 @@ Parameters:
 
 - name: The group name
 
-Returns a handler that adds the group name to the attribute key path
+Returns:
+
+- slog.Handler: A new handler that includes the specified group
 
 <a name="JSONHandler"></a>
-## type [JSONHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L21-L26>)
+## type [JSONHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L20-L25>)
 
-JSONHandler is a custom handler that produces JSON output with configurable formatting. It implements the slog.Handler interface and supports ordering attributes and pretty printing options.
+JSONHandler is a slog.Handler that formats logs as JSON. It provides control over pretty\-printing and supports all standard slog.Handler functionality.
 
 ```go
 type JSONHandler struct {
@@ -328,7 +399,7 @@ type JSONHandler struct {
 ```
 
 <a name="JSONHandler.Enabled"></a>
-### func \(\*JSONHandler\) [Enabled](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L56>)
+### func \(\*JSONHandler\) [Enabled](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L55>)
 
 ```go
 func (h *JSONHandler) Enabled(ctx context.Context, level slog.Level) bool
@@ -341,7 +412,9 @@ Parameters:
 - ctx: The context for the logging operation
 - level: The log level to check
 
-Returns true if the log level should be processed, false otherwise
+Returns:
+
+- bool: True if the log level should be processed, false otherwise
 
 <a name="JSONHandler.Handle"></a>
 ### func \(\*JSONHandler\) [Handle](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L69>)
@@ -357,10 +430,12 @@ Parameters:
 - ctx: The context for the logging operation
 - r: The log record to process
 
-Returns any error encountered during formatting or writing
+Returns:
+
+- error: Any error encountered during formatting or writing
 
 <a name="JSONHandler.WithAttrs"></a>
-### func \(\*JSONHandler\) [WithAttrs](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L154>)
+### func \(\*JSONHandler\) [WithAttrs](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L155>)
 
 ```go
 func (h *JSONHandler) WithAttrs(attrs []slog.Attr) slog.Handler
@@ -372,10 +447,12 @@ Parameters:
 
 - attrs: The attributes to add to the handler
 
-Returns a new handler instance with the attributes
+Returns:
+
+- slog.Handler: A new handler instance with the attributes
 
 <a name="JSONHandler.WithGroup"></a>
-### func \(\*JSONHandler\) [WithGroup](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L166>)
+### func \(\*JSONHandler\) [WithGroup](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L168>)
 
 ```go
 func (h *JSONHandler) WithGroup(name string) slog.Handler
@@ -387,12 +464,14 @@ Parameters:
 
 - name: The group name
 
-Returns a handler that adds the group name to the attribute key path
+Returns:
+
+- slog.Handler: A handler that adds the group name to the attribute key path
 
 <a name="Logger"></a>
-## type [Logger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L80-L82>)
+## type [Logger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L107-L109>)
 
-Logger is a wrapper around slog.Logger that provides additional functionality. It allows for easy configuration of log outputs, levels, and custom handlers.
+Logger is the main logging structure that wraps slog.Logger. It provides structured logging capabilities with additional convenience methods for different log levels.
 
 ```go
 type Logger struct {
@@ -401,7 +480,7 @@ type Logger struct {
 ```
 
 <a name="L"></a>
-### func [L](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L296>)
+### func [L](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L355>)
 
 ```go
 func L() *Logger
@@ -409,25 +488,12 @@ func L() *Logger
 
 L returns the current logger instance. It is safe to call concurrently and returns the same logger instance. This is the main entry point for logging in the application.
 
-Returns the configured Logger instance
+Returns:
 
-<a name="WithContext"></a>
-### func [WithContext](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L309>)
-
-```go
-func WithContext(ctx context.Context) *Logger
-```
-
-WithContext returns a logger with the request ID from the context. This should be customized based on your context handling for each application.
-
-Parameters:
-
-- ctx: A context.Context that may contain a request\_id value
-
-Returns a Logger that includes the request ID in its attributes if present
+- \*Logger: The configured Logger instance
 
 <a name="Logger.Fatal"></a>
-### func \(\*Logger\) [Fatal](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L362>)
+### func \(\*Logger\) [Fatal](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L409>)
 
 ```go
 func (l *Logger) Fatal(msg string, attrs ...any)
@@ -440,10 +506,12 @@ Parameters:
 - msg: The message to log
 - attrs: Additional attributes to include with the log entry, provided as alternating keys and values
 
-This function does not return as it calls os.Exit\(1\)
+Returns:
+
+- None: This function does not return as it calls os.Exit\(1\)
 
 <a name="Logger.Trace"></a>
-### func \(\*Logger\) [Trace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L326>)
+### func \(\*Logger\) [Trace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L372>)
 
 ```go
 func (l *Logger) Trace(msg string, attrs ...any)
@@ -456,8 +524,12 @@ Parameters:
 - msg: The message to log
 - attrs: Additional attributes to include with the log entry, provided as alternating keys and values
 
+Returns:
+
+- None
+
 <a name="LoggerOption"></a>
-## type [LoggerOption](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L76>)
+## type [LoggerOption](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L102>)
 
 LoggerOption is a functional option type for configuring the logger. This allows for a flexible and extensible way to configure the logger with various options.
 
@@ -466,7 +538,7 @@ type LoggerOption func()
 ```
 
 <a name="AddChannelOutput"></a>
-### func [AddChannelOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L285>)
+### func [AddChannelOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L343>)
 
 ```go
 func AddChannelOutput(ch chan string) LoggerOption
@@ -478,29 +550,33 @@ Parameters:
 
 - ch: A channel of strings that will receive log messages
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to add channel output
 
 <a name="AddFileOutput"></a>
-### func [AddFileOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L246>)
+### func [AddFileOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L302>)
 
 ```go
-func AddFileOutput(path string, maxSize, backups, age int, compress bool) LoggerOption
+func AddFileOutput(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool) LoggerOption
 ```
 
-AddFileOutput adds a file output to the logger. It uses the Lumberjack package to manage log file rotation. This allows for log files to be rotated based on size, number of backups, and age.
+AddFileOutput adds file output to the logger with rotation support. This allows log messages to be written to a file, with automatic rotation when the file reaches the specified maximum size.
 
 Parameters:
 
-- path: Path to the log file
-- maxSize: Maximum size of the log file in megabytes before it's rotated
-- backups: Maximum number of old log files to retain
-- age: Maximum number of days to retain old log files
-- compress: Whether to compress old log files
+- filepath: The path to the log file
+- maxSizeMB: Maximum size of the log file in megabytes before rotation
+- maxBackups: Maximum number of old log files to retain
+- maxAgeDays: Maximum number of days to retain old log files
+- compress: If true, rotated log files will be compressed using gzip
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to add file output
 
 <a name="AddSource"></a>
-### func [AddSource](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L204>)
+### func [AddSource](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L257>)
 
 ```go
 func AddSource() LoggerOption
@@ -508,10 +584,12 @@ func AddSource() LoggerOption
 
 AddSource enables adding source file and line information to log messages. This helps with debugging by showing where each log message originated from.
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to include source information
 
 <a name="DisableColors"></a>
-### func [DisableColors](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L166>)
+### func [DisableColors](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L208>)
 
 ```go
 func DisableColors() LoggerOption
@@ -519,10 +597,12 @@ func DisableColors() LoggerOption
 
 DisableColors disables colored output in console logs. This is useful for environments where ANSI color codes might cause issues, such as when logging to files or in environments that don't support colors.
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to disable colored output
 
 <a name="DisableConsole"></a>
-### func [DisableConsole](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L228>)
+### func [DisableConsole](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L283>)
 
 ```go
 func DisableConsole() LoggerOption
@@ -530,36 +610,72 @@ func DisableConsole() LoggerOption
 
 DisableConsole disables the console output. This is useful for applications that do not require console logging, such as background services or daemons.
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
 
-<a name="EnableTrace"></a>
-### func [EnableTrace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L177>)
+- LoggerOption: A function that can be passed to Init\(\) to disable console output
+
+<a name="EnableLogLevelTrace"></a>
+### func [EnableLogLevelTrace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L219>)
 
 ```go
-func EnableTrace() LoggerOption
+func EnableLogLevelTrace() LoggerOption
 ```
 
-EnableTrace enables trace logging, which is a level below DEBUG. This is useful for capturing detailed information during development or debugging. When trace is enabled, the log level is automatically lowered to include trace messages.
+EnableLogLevelTrace enables trace logging level \(which is a level below DEBUG\). This is useful for capturing detailed information during development or debugging.
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to set the trace log level
+
+<a name="EnableStackTraces"></a>
+### func [EnableStackTraces](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L231>)
+
+```go
+func EnableStackTraces() LoggerOption
+```
+
+EnableStackTraces enables stack trace inclusion in log messages. When enabled, a stack trace will be included with log messages, which can be helpful for debugging and error tracking.
+
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to enable stack traces
+
+<a name="SetFileHandlerForTesting"></a>
+### func [SetFileHandlerForTesting](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L494>)
+
+```go
+func SetFileHandlerForTesting(w io.Writer) LoggerOption
+```
+
+SetFileHandlerForTesting is a special helper for test files to ensure proper handling of file outputs during testing
+
+Parameters:
+
+- w: The io.Writer to use for log output during testing
+
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to set a test file handler
 
 <a name="SetLevel"></a>
-### func [SetLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L155>)
+### func [SetLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L196>)
 
 ```go
 func SetLevel(level slog.Level) LoggerOption
 ```
 
-SetLevel sets the log level for the logger. Only messages at or above this level will be logged.
+SetLevel sets the minimum log level that will be logged. Any log messages with a level lower than this will be ignored.
 
 Parameters:
 
-- level: The minimum log level to capture
+- level: The minimum log level to log \(e.g., slog.LevelDebug, slog.LevelInfo\)
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to configure the logger
 
 <a name="UseCustomHandler"></a>
-### func [UseCustomHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L217>)
+### func [UseCustomHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L271>)
 
 ```go
 func UseCustomHandler(h slog.Handler) LoggerOption
@@ -571,10 +687,12 @@ Parameters:
 
 - h: A custom slog.Handler implementation
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to use a custom handler
 
 <a name="UseJSON"></a>
-### func [UseJSON](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L193>)
+### func [UseJSON](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L245>)
 
 ```go
 func UseJSON(pretty bool) LoggerOption
@@ -586,12 +704,14 @@ Parameters:
 
 - pretty: If true, JSON will be formatted with indentation for better readability. If false, JSON will be compact without extra whitespace.
 
-Returns a LoggerOption that can be passed to Init\(\)
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to use JSON formatting
 
 <a name="StyledConsoleWriter"></a>
-## type [StyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L22-L24>)
+## type [StyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L21-L23>)
 
-StyledConsoleWriter is a custom writer that formats log messages with colors and styles. It implements the io.Writer interface, allowing it to be used with standard logging functions. This is useful for applications that require visually distinct log messages in the console.
+StyledConsoleWriter is an io.Writer that formats log messages with styles and colors. It detects log levels and applies appropriate styling to make logs more readable.
 
 ```go
 type StyledConsoleWriter struct {
@@ -612,10 +732,12 @@ Parameters:
 
 - w: The underlying io.Writer where formatted output will be written \(typically os.Stdout\)
 
-Returns a StyledConsoleWriter that implements io.Writer
+Returns:
+
+- \*StyledConsoleWriter: A new styled console writer that implements io.Writer
 
 <a name="StyledConsoleWriter.Write"></a>
-### func \(\*StyledConsoleWriter\) [Write](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L55>)
+### func \(\*StyledConsoleWriter\) [Write](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L57>)
 
 ```go
 func (cw *StyledConsoleWriter) Write(p []byte) (int, error)
@@ -627,6 +749,9 @@ Parameters:
 
 - p: The byte slice containing the log message to write
 
-Returns the number of bytes written and any error encountered
+Returns:
+
+- int: The number of bytes written
+- error: Any error encountered during writing
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
