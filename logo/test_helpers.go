@@ -55,17 +55,17 @@ func SuppressLogOutput(t *testing.T) func() {
 // Returns a LoggerOption that can be passed to Init()
 func SetConsoleOutput(w io.Writer) LoggerOption {
 	return func() {
-		if consoleOn {
-			// If console output is enabled, add the provided writer
-			// instead of the default os.Stdout
-			if !useJSONFormat {
-				outputs = append(outputs, NewStyledConsoleWriter(w))
-			} else {
-				outputs = append(outputs, w)
-			}
+		// Always clear any existing outputs first
+		outputs = nil
 
-			// Mark that we've already added console output
-			consoleOn = false
+		// Add the provided writer as the console output
+		if !useJSONFormat {
+			outputs = append(outputs, NewStyledConsoleWriter(w))
+		} else {
+			outputs = append(outputs, w)
 		}
+
+		// Mark that we've handled console output
+		consoleOn = false
 	}
 }
