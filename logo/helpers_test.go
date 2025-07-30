@@ -17,7 +17,8 @@ import (
 // Parameters:
 //   - t: The testing.T instance for test context
 //
-// Returns a function that should be deferred to restore the original output
+// Returns:
+//   - func(): A cleanup function that should be deferred to restore the original output
 func SuppressLogOutput(t *testing.T) func() {
 	t.Helper()
 
@@ -52,7 +53,8 @@ func SuppressLogOutput(t *testing.T) func() {
 // Parameters:
 //   - w: The io.Writer to use for console output
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A logger option function that can be passed to Init()
 func SetConsoleOutput(w io.Writer) LoggerOption {
 	return func() {
 		// Always clear any existing outputs first
