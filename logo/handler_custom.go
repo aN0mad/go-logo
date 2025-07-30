@@ -14,9 +14,9 @@ import (
 	"strings"
 )
 
-// CustomTextHandler is a custom handler that produces text output with ordered attributes.
-// It implements the slog.Handler interface and formats log messages in a consistent,
-// readable format with configurable attribute ordering.
+// CustomTextHandler is a slog.Handler that formats logs as structured text.
+// It provides control over attribute ordering and supports all standard
+// slog.Handler functionality.
 type CustomTextHandler struct {
 	out       io.Writer
 	opts      *slog.HandlerOptions
@@ -31,7 +31,8 @@ type CustomTextHandler struct {
 //   - out: The io.Writer where log entries will be written
 //   - opts: Handler options including log level and attribute replacements
 //
-// Returns a slog.Handler implementation
+// Returns:
+//   - slog.Handler: A handler implementation for text-formatted logs
 func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler {
 
 	return &CustomTextHandler{
@@ -50,7 +51,8 @@ func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler
 //   - ctx: The context for the logging operation
 //   - level: The log level to check
 //
-// Returns true if the log level should be processed, false otherwise
+// Returns:
+//   - bool: True if the log level should be processed, false otherwise
 func (h *CustomTextHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	minLevel := h.opts.Level.Level()
 	return level >= minLevel
@@ -63,7 +65,8 @@ func (h *CustomTextHandler) Enabled(ctx context.Context, level slog.Level) bool 
 //   - ctx: The context for the logging operation
 //   - r: The log record to process
 //
-// Returns any error encountered during formatting or writing
+// Returns:
+//   - error: Any error encountered during formatting or writing
 func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Collect all attributes in a map for reordering
 	attrs := make(map[string]string)
@@ -163,8 +166,8 @@ func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 // Parameters:
 //   - attrs: The attributes to add to the handler
 //
-// Returns a new handler instance with the attributes
-// WithAttrs implements slog.Handler.WithAttrs.
+// Returns:
+//   - slog.Handler: A new handler instance with the attributes
 func (h *CustomTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	// Create a new handler with the same settings
 	newHandler := &CustomTextHandler{
@@ -200,8 +203,8 @@ func (h *CustomTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 // Parameters:
 //   - name: The group name
 //
-// Returns a handler that adds the group name to the attribute key path
-// WithGroup implements slog.Handler.WithGroup.
+// Returns:
+//   - slog.Handler: A new handler that includes the specified group
 func (h *CustomTextHandler) WithGroup(name string) slog.Handler {
 	// Skip empty group names
 	if name == "" {
@@ -225,7 +228,8 @@ func (h *CustomTextHandler) WithGroup(name string) slog.Handler {
 // Parameters:
 //   - l: The slog.Level to convert
 //
-// Returns the string representation of the log level, or empty string if not recognized
+// Returns:
+//   - string: The string representation of the log level, or empty string if not recognized
 func levelToString(l slog.Level) string {
 	switch l {
 	case LevelTrace:

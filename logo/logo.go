@@ -45,21 +45,46 @@ import (
 )
 
 var (
-	mu                 sync.RWMutex                                 // Mutex to protect shared state
-	consoleOn          = true                                       // Whether to enable console output
-	outputs            []io.Writer                                  // List of outputs to write logs to, can include console, files, etc.
-	includeSource      = false                                      // Include source file and line number in logs
-	includeStackTraces = false                                      // Include stack trace in logs for log levels
-	logLevel           = slog.LevelInfo                             // Default log level
-	useJSONFormat      = false                                      // Whether to use JSON format for logs
-	jsonPretty         = false                                      // Whether to use pretty JSON formatting
-	attrOrder          = []string{"time", "level", "msg", "source"} // Default attribute order for log entries
-	colorEnabled       = true                                       // Whether to enable colored output in console logs
-	fileWriters        []*lumberjack.Logger                         // List of file writers for proper closing
+	// mu protects shared state in the logger package
+	mu sync.RWMutex
+
+	// consoleOn determines whether console output is enabled
+	consoleOn = true
+
+	// outputs is the list of writers to send log output to
+	outputs []io.Writer
+
+	// includeSource determines whether to include source file and line information in logs
+	includeSource = false
+
+	// includeStackTraces determines whether to include stack traces in logs
+	includeStackTraces = false
+
+	// logLevel is the minimum log level that will be output
+	logLevel = slog.LevelInfo
+
+	// useJSONFormat determines whether to output logs in JSON format
+	useJSONFormat = false
+
+	// jsonPretty determines whether JSON output should be pretty-printed
+	jsonPretty = false
+
+	// attrOrder defines the default attribute order for structured log entries
+	attrOrder = []string{"time", "level", "msg", "source"}
+
+	// colorEnabled determines whether to use colored output in console logs
+	colorEnabled = true
+
+	// fileWriters tracks all lumberjack loggers for proper closing
+	fileWriters []*lumberjack.Logger
 )
 
-var osExit = os.Exit // osExit is a variable to allow mocking os.Exit in tests
-var logger *Logger   // Global logger instance
+// osExit is a variable that points to os.Exit to allow for testing
+// of the Fatal function without actually terminating the program.
+var osExit = os.Exit
+
+// Global logger instance
+var logger *Logger
 
 // Constants for additional log levels not provided by the standard slog package.
 const (
@@ -76,8 +101,9 @@ const (
 // with various options.
 type LoggerOption func()
 
-// Logger is a wrapper around slog.Logger that provides additional functionality.
-// It allows for easy configuration of log outputs, levels, and custom handlers.
+// Logger is the main logging structure that wraps slog.Logger.
+// It provides structured logging capabilities with additional
+// convenience methods for different log levels.
 type Logger struct {
 	*slog.Logger
 }
@@ -97,6 +123,9 @@ type Logger struct {
 //
 // Parameters:
 //   - opts: A variadic list of LoggerOption functions to configure the logger
+//
+// Returns:
+//   - None
 func Init(opts ...LoggerOption) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -162,7 +191,8 @@ func Init(opts ...LoggerOption) {
 // Parameters:
 //   - level: The minimum log level to log (e.g., slog.LevelDebug, slog.LevelInfo)
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to configure the logger
 func SetLevel(level slog.Level) LoggerOption {
 	return func() {
 		logLevel = level
@@ -173,7 +203,8 @@ func SetLevel(level slog.Level) LoggerOption {
 // This is useful for environments where ANSI color codes might cause issues,
 // such as when logging to files or in environments that don't support colors.
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to disable colored output
 func DisableColors() LoggerOption {
 	return func() {
 		colorEnabled = false
@@ -183,7 +214,8 @@ func DisableColors() LoggerOption {
 // EnableLogLevelTrace enables trace logging level (which is a level below DEBUG).
 // This is useful for capturing detailed information during development or debugging.
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to set the trace log level
 func EnableLogLevelTrace() LoggerOption {
 	return func() {
 		logLevel = LevelTrace
@@ -194,7 +226,8 @@ func EnableLogLevelTrace() LoggerOption {
 // When enabled, a stack trace will be included with log messages,
 // which can be helpful for debugging and error tracking.
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to enable stack traces
 func EnableStackTraces() LoggerOption {
 	return func() {
 		includeStackTraces = true
@@ -207,7 +240,8 @@ func EnableStackTraces() LoggerOption {
 //   - pretty: If true, JSON will be formatted with indentation for better readability.
 //     If false, JSON will be compact without extra whitespace.
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to use JSON formatting
 func UseJSON(pretty bool) LoggerOption {
 	return func() {
 		useJSONFormat = true
@@ -218,7 +252,8 @@ func UseJSON(pretty bool) LoggerOption {
 // AddSource enables adding source file and line information to log messages.
 // This helps with debugging by showing where each log message originated from.
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to include source information
 func AddSource() LoggerOption {
 	return func() {
 		includeSource = true
@@ -231,7 +266,8 @@ func AddSource() LoggerOption {
 // Parameters:
 //   - h: A custom slog.Handler implementation
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to use a custom handler
 func UseCustomHandler(h slog.Handler) LoggerOption {
 	return func() {
 		logger = &Logger{slog.New(h)}
@@ -242,7 +278,8 @@ func UseCustomHandler(h slog.Handler) LoggerOption {
 // This is useful for applications that do not require console logging,
 // such as background services or daemons.
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to disable console output
 func DisableConsole() LoggerOption {
 	return func() {
 		consoleOn = false
@@ -260,7 +297,8 @@ func DisableConsole() LoggerOption {
 //   - maxAgeDays: Maximum number of days to retain old log files
 //   - compress: If true, rotated log files will be compressed using gzip
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to add file output
 func AddFileOutput(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool) LoggerOption {
 	return func() {
 		w := NewLumberjackWriter(filepath, maxSizeMB, maxBackups, maxAgeDays, compress)
@@ -273,7 +311,8 @@ func AddFileOutput(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compr
 // This ensures that all log messages are flushed and file handles are closed.
 // It should be called before the application exits.
 //
-// Returns any error encountered while closing resources
+// Returns:
+//   - error: Any error encountered while closing resources
 func Close() error {
 	mu.Lock()
 	defer mu.Unlock()
@@ -299,7 +338,8 @@ func Close() error {
 // Parameters:
 //   - ch: A channel of strings that will receive log messages
 //
-// Returns a LoggerOption that can be passed to Init()
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to add channel output
 func AddChannelOutput(ch chan string) LoggerOption {
 	return func() {
 		outputs = append(outputs, NewChannelWriter(ch))
@@ -310,7 +350,8 @@ func AddChannelOutput(ch chan string) LoggerOption {
 // It is safe to call concurrently and returns the same logger instance.
 // This is the main entry point for logging in the application.
 //
-// Returns the configured Logger instance
+// Returns:
+//   - *Logger: The configured Logger instance
 func L() *Logger {
 	mu.RLock()
 	defer mu.RUnlock()
@@ -325,6 +366,9 @@ func L() *Logger {
 //   - msg: The message to log
 //   - attrs: Additional attributes to include with the log entry,
 //     provided as alternating keys and values
+//
+// Returns:
+//   - None
 func (l *Logger) Trace(msg string, attrs ...any) {
 	if !l.Enabled(context.Background(), LevelTrace) {
 		return
@@ -360,7 +404,8 @@ func (l *Logger) Trace(msg string, attrs ...any) {
 //   - attrs: Additional attributes to include with the log entry,
 //     provided as alternating keys and values
 //
-// This function does not return as it calls os.Exit(1)
+// Returns:
+//   - None: This function does not return as it calls os.Exit(1)
 func (l *Logger) Fatal(msg string, attrs ...any) {
 	pc, file, line, _ := runtime.Caller(1)
 	fn := runtime.FuncForPC(pc).Name()
@@ -395,7 +440,8 @@ func (l *Logger) Fatal(msg string, attrs ...any) {
 // Parameters:
 //   - args: Variable arguments that should be pairs of string keys and arbitrary values
 //
-// Returns a slice of slog.Attr representing the normalized attributes
+// Returns:
+//   - []slog.Attr: A slice of slog.Attr representing the normalized attributes
 func normalizeAttrs(args ...any) []slog.Attr {
 	var attrs []slog.Attr
 	i := 0
@@ -431,13 +477,20 @@ func normalizeAttrs(args ...any) []slog.Attr {
 // timeNow returns the current time.
 // This function exists to make testing easier by allowing time to be mocked.
 //
-// Returns the current time
+// Returns:
+//   - time.Time: The current time
 func timeNow() time.Time {
 	return time.Now()
 }
 
 // SetFileHandlerForTesting is a special helper for test files
 // to ensure proper handling of file outputs during testing
+//
+// Parameters:
+//   - w: The io.Writer to use for log output during testing
+//
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to set a test file handler
 func SetFileHandlerForTesting(w io.Writer) LoggerOption {
 	return func() {
 		// Add the provided writer as a file output

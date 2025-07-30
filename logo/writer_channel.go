@@ -8,33 +8,32 @@ import (
 	"strings"
 )
 
-// ChannelWriter is a custom writer that sends log messages to a channel.
-// It implements the io.Writer interface, allowing it to be used with standard logging functions.
-// This is useful for applications that need to collect log messages asynchronously or process them in a different way.
+// ChannelWriter is an io.Writer that sends log messages to a channel.
+// It can be used to pass log messages to custom processing routines.
 type ChannelWriter struct {
 	ch chan string
 }
 
-// NewChannelWriter creates a new ChannelWriter instance.
-// It initializes the writer with the provided channel.
-// The channel should be buffered to handle log messages without blocking.
+// NewChannelWriter creates a new writer that sends log messages to the given channel.
 //
 // Parameters:
-//   - ch: A channel of strings that will receive the log messages
+//   - ch: The channel to which log messages will be sent
 //
-// Returns a ChannelWriter that implements io.Writer
+// Returns:
+//   - *ChannelWriter: A channel writer that implements io.Writer
 func NewChannelWriter(ch chan string) *ChannelWriter {
 	return &ChannelWriter{ch: ch}
 }
 
 // Write implements the io.Writer interface for ChannelWriter.
-// It sends the log message to the channel in a non-blocking way.
+// It sends the log message to the channel associated with this writer.
 //
 // Parameters:
-//   - p: The byte slice containing the log message to write
+//   - p: The byte slice containing the log message
 //
-// Returns the number of bytes processed and any error encountered.
-// Note that if the channel is full, the message will be dropped but no error is returned.
+// Returns:
+//   - int: The number of bytes processed
+//   - error: Any error encountered during writing (or nil if successful)
 func (cw *ChannelWriter) Write(p []byte) (int, error) {
 	msg := strings.TrimSpace(string(p))
 	if msg != "" {

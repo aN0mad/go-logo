@@ -14,9 +14,9 @@ import (
 	"slices"
 )
 
-// JSONHandler is a custom handler that produces JSON output with configurable formatting.
-// It implements the slog.Handler interface and supports ordering attributes
-// and pretty printing options.
+// JSONHandler is a slog.Handler that formats logs as JSON.
+// It provides control over pretty-printing and supports all standard
+// slog.Handler functionality.
 type JSONHandler struct {
 	out         io.Writer
 	opts        *slog.HandlerOptions
@@ -31,7 +31,8 @@ type JSONHandler struct {
 //   - opts: Handler options including log level and attribute replacements
 //   - pretty: Whether to format the JSON with indentation for better readability
 //
-// Returns a slog.Handler implementation
+// Returns:
+//   - slog.Handler: A handler implementation for JSON-formatted logs
 func NewJSONHandler(out io.Writer, opts *slog.HandlerOptions, pretty bool) slog.Handler {
 
 	return &JSONHandler{
@@ -49,7 +50,8 @@ func NewJSONHandler(out io.Writer, opts *slog.HandlerOptions, pretty bool) slog.
 //   - ctx: The context for the logging operation
 //   - level: The log level to check
 //
-// Returns true if the log level should be processed, false otherwise
+// Returns:
+//   - bool: True if the log level should be processed, false otherwise
 func (h *JSONHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	minLevel := h.opts.Level.Level()
 	return level >= minLevel
@@ -62,7 +64,8 @@ func (h *JSONHandler) Enabled(ctx context.Context, level slog.Level) bool {
 //   - ctx: The context for the logging operation
 //   - r: The log record to process
 //
-// Returns any error encountered during formatting or writing
+// Returns:
+//   - error: Any error encountered during formatting or writing
 func (h *JSONHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Create an ordered map to maintain attribute order
 	orderedMap := make(map[string]interface{})
@@ -147,7 +150,8 @@ func (h *JSONHandler) Handle(ctx context.Context, r slog.Record) error {
 // Parameters:
 //   - attrs: The attributes to add to the handler
 //
-// Returns a new handler instance with the attributes
+// Returns:
+//   - slog.Handler: A new handler instance with the attributes
 func (h *JSONHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	// Create a new handler with the same settings
 	return NewJSONHandler(h.out, h.opts, h.prettyPrint)
@@ -159,7 +163,8 @@ func (h *JSONHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 // Parameters:
 //   - name: The group name
 //
-// Returns a handler that adds the group name to the attribute key path
+// Returns:
+//   - slog.Handler: A handler that adds the group name to the attribute key path
 func (h *JSONHandler) WithGroup(name string) slog.Handler {
 	// Groups are not fully implemented in this simple handler
 	return h
