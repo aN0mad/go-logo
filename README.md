@@ -17,12 +17,11 @@ A golang logging library that allows logging to the console, to a channel or bot
 ```bash
 /workspace/bin ./go-logo.elf
 Initialized logger
-[14:11:09] time=2025-07-29T14:11:09.752Z level=DEBUG msg=This is a debug message source=main.go:21
-[14:11:09] time=2025-07-29T14:11:09.752Z level=INFO msg=This is an info message source=main.go:22
-[14:11:09] time=2025-07-29T14:11:09.752Z level=WARN msg=This is a warning message source=main.go:23
-[14:11:09] time=2025-07-29T14:11:09.753Z level=ERROR msg=This is an error message source=main.go:24
-[14:11:09] time=2025-07-29T14:11:09.753Z level=FATAL msg=This is a fatal message - It will exit the program source=main.go:25
-exit status 1
+[18:56:51] time=2025-07-30T18:56:51.722Z level=DEBUG msg=This is a debug message source=/workspace/cmd/main.go:23
+[18:56:51] time=2025-07-30T18:56:51.722Z level=INFO msg=This is an info message source=/workspace/cmd/main.go:24
+[18:56:51] time=2025-07-30T18:56:51.723Z level=WARN msg=This is a warning message source=/workspace/cmd/main.go:25
+[18:56:51] time=2025-07-30T18:56:51.723Z level=ERROR msg=This is an error message source=/workspace/cmd/main.go:26
+[18:56:51] time=2025-07-30T18:56:51.723Z level=FATAL msg=This is a fatal message - It will exit the program source=/workspace/cmd/main.go:27
 ```
 
 ### Colored output
