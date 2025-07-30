@@ -38,7 +38,6 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
-	"strings"
 	"sync"
 	"time"
 
@@ -459,11 +458,4 @@ func SetFileHandlerForTesting(w io.Writer) LoggerOption {
 		// Add the provided writer as a file output
 		outputs = append(outputs, w)
 	}
-}
-
-// isTestEnv checks if we're running in a test environment
-func isTestEnv() bool {
-	return strings.HasSuffix(os.Args[0], ".test") ||
-		strings.Contains(os.Args[0], "/go-build") ||
-		os.Getenv("GO_TESTING") == "1"
 }
