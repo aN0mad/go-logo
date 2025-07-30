@@ -436,8 +436,15 @@ func normalizeAttrs(args ...any) []slog.Attr {
 				i++
 			}
 		default:
-			// Skip unknown
-			i++
+			// Skip non-string keys and their values if possible
+			if i+1 < len(args) {
+				// If there's a potential value after this non-string key,
+				// skip both the key and the value
+				i += 2
+			} else {
+				// Otherwise just skip this single item
+				i++
+			}
 		}
 	}
 	return attrs
