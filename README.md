@@ -177,6 +177,43 @@ Check the examples directory for more detailed examples:
 - Context-aware logging
 - Comprehensive logger configuration
 
+### Logging with context
+```golang
+// No WithContext in core library
+// To use with web contexts, extend the logger in your application:
+
+// In your web app's logger package
+func LoggerFromContext(ctx context.Context) *logo.Logger {
+    logger := logo.L()
+    
+    // Add application-specific context values
+    if requestID, ok := ctx.Value("request_id").(string); ok {
+        logger = logger.With("request_id", requestID)
+    }
+    if userID, ok := ctx.Value("user_id").(string); ok {
+        logger = logger.With("user_id", userID)
+    }
+    
+    return logger
+}
+```
+
+## Running Tests
+### Run all unit tests:
+```bash
+go test ./logo/
+```
+
+### Check test coverage
+```bash
+go test -v -coverprofile coverage.out
+```
+
+#### Generate HTML report
+```bash
+go tool cover -html coverage.out -o coverage.html
+```
+
 ## Enhancements
 - Migrate from [Lumberjack](https://github.com/aN0mad/lumberjack) to [timberjack](https://github.com/DeRuina/timberjack/) for enhanced log file control
 
@@ -184,3 +221,8 @@ Check the examples directory for more detailed examples:
 - [natefinch](https://github.com/natefinch) for the [Lumberjack](https://github.com/natefinch/lumberjack) package to handle log files and rotations
 - [charmbracelet](https://github.com/charmbracelet) for the [lipgloss](https://github.com/charmbracelet/lipgloss) package for ANSI coloring
 - Docs generated with [gomarkdoc](https://github.com/princjef/gomarkdoc) using `/go/bin/gomarkdoc . > doc.md` within the module directory (`./logo`)
+
+
+# TODO
+- Regenerate docs
+- Regenerate test coverage report
