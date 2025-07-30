@@ -34,10 +34,6 @@ type CustomTextHandler struct {
 // Returns a slog.Handler implementation
 func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler {
 
-	// if opts == nil {
-	// 	opts = &slog.HandlerOptions{}
-	// }
-
 	return &CustomTextHandler{
 		out:       out,
 		opts:      opts,
@@ -84,9 +80,9 @@ func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 			frame, _ := fs.Next()
 			if frame.File != "" {
 				shortFile := frame.File
-				if lastSlash := strings.LastIndex(shortFile, "/"); lastSlash >= 0 { // TODO: Fix to remove short source
-					shortFile = shortFile[lastSlash+1:]
-				}
+				// if lastSlash := strings.LastIndex(shortFile, "/"); lastSlash >= 0 { // Removed short source for full path
+				// 	shortFile = shortFile[lastSlash+1:]
+				// }
 				attrs["source"] = fmt.Sprintf("%s:%d", shortFile, frame.Line)
 			}
 		}
@@ -94,14 +90,14 @@ func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	// Process handler attributes (added via With())
 	for _, attr := range h.attrs {
-		if attr.Key != "level" && attr.Key != "msg" && attr.Key != "time" && attr.Key != "source" { // TODO: Replace with not in attrOrder `if !slices.Contains(h.attrOrder, attr.Key) {`
+		if !slices.Contains(h.attrOrder, attr.Key) {
 			attrs[attr.Key] = attr.Value.String()
 		}
 	}
 
 	// Process record attributes
 	r.Attrs(func(a slog.Attr) bool {
-		if a.Key != "level" && a.Key != "msg" && a.Key != "time" && a.Key != "source" { // TODO: Replace with not in attrOrder `if !slices.Contains(h.attrOrder, attr.Key) {`
+		if !slices.Contains(h.attrOrder, a.Key) {
 			// Apply ReplaceAttr if provided
 			if h.opts.ReplaceAttr != nil {
 				a = h.opts.ReplaceAttr(nil, a)

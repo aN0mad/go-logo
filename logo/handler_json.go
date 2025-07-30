@@ -12,7 +12,6 @@ import (
 	"log/slog"
 	"runtime"
 	"slices"
-	"strings"
 )
 
 // JSONHandler is a custom handler that produces JSON output with configurable formatting.
@@ -80,9 +79,9 @@ func (h *JSONHandler) Handle(ctx context.Context, r slog.Record) error {
 			frame, _ := fs.Next()
 			if frame.File != "" {
 				shortFile := frame.File
-				if lastSlash := strings.LastIndex(shortFile, "/"); lastSlash >= 0 {
-					shortFile = shortFile[lastSlash+1:]
-				}
+				// if lastSlash := strings.LastIndex(shortFile, "/"); lastSlash >= 0 { // Removed short source for full path
+				// 	shortFile = shortFile[lastSlash+1:]
+				// }
 				orderedMap["source"] = fmt.Sprintf("%s:%d", shortFile, frame.Line)
 			}
 		}
@@ -103,7 +102,7 @@ func (h *JSONHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 
 		// Skip attributes we've already handled
-		if a.Key == "time" || a.Key == "level" || a.Key == "msg" || a.Key == "source" {
+		if slices.Contains(h.attrOrder, a.Key) {
 			return true
 		}
 

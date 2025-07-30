@@ -45,21 +45,21 @@ import (
 )
 
 var (
-	mu                 sync.RWMutex
-	consoleOn          = true
-	outputs            []io.Writer
-	includeSource      = false          // Include source file and line number in logs
-	includeStackTraces = false          // Include stack trace in logs for log levels
-	logLevel           = slog.LevelInfo // Default log level
-	useJSONFormat      = false
-	jsonPretty         = false // Whether to use pretty JSON formatting
-	attrOrder          = []string{"time", "level", "msg", "source"}
-	colorEnabled       = true               // Whether to enable colored output in console logs
-	fileWriters        []*lumberjack.Logger // List of file writers for proper closing
+	mu                 sync.RWMutex                                 // Mutex to protect shared state
+	consoleOn          = true                                       // Whether to enable console output
+	outputs            []io.Writer                                  // List of outputs to write logs to, can include console, files, etc.
+	includeSource      = false                                      // Include source file and line number in logs
+	includeStackTraces = false                                      // Include stack trace in logs for log levels
+	logLevel           = slog.LevelInfo                             // Default log level
+	useJSONFormat      = false                                      // Whether to use JSON format for logs
+	jsonPretty         = false                                      // Whether to use pretty JSON formatting
+	attrOrder          = []string{"time", "level", "msg", "source"} // Default attribute order for log entries
+	colorEnabled       = true                                       // Whether to enable colored output in console logs
+	fileWriters        []*lumberjack.Logger                         // List of file writers for proper closing
 )
 
-var osExit = os.Exit
-var logger *Logger
+var osExit = os.Exit // osExit is a variable to allow mocking os.Exit in tests
+var logger *Logger   // Global logger instance
 
 // Constants for additional log levels not provided by the standard slog package.
 const (
@@ -129,6 +129,7 @@ func Init(opts ...LoggerOption) {
 		}
 	}
 
+	// If no outputs are specified, default to console output
 	handlerOptions := &slog.HandlerOptions{
 		Level:     logLevel,
 		AddSource: includeSource,
@@ -315,29 +316,6 @@ func L() *Logger {
 	defer mu.RUnlock()
 	return logger
 }
-
-// // WithContext returns a logger with the request ID from the context.
-// // This should be customized based on your context handling for each application.
-// //
-// // Parameters:
-// //   - ctx: A context.Context that may contain a request_id value
-// //
-// // Returns a Logger that includes the request ID in its attributes if present
-// func WithContext(ctx context.Context) *Logger {
-// 	if ctx == nil {
-// 		return L()
-// 	}
-
-// 	// Extract request ID from context if present
-// 	if requestID, ok := ctx.Value("request_id").(string); ok {
-// 		// The issue is here - we need to create a new slog.Logger with the attribute
-// 		baseLogger := L().Logger
-// 		newSlogLogger := baseLogger.With("request_id", requestID)
-// 		return &Logger{Logger: newSlogLogger}
-// 	}
-
-// 	return L()
-// }
 
 // Trace logs with a level below DEBUG and includes a stack trace.
 // This is useful for very detailed diagnostic information typically
