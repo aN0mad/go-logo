@@ -472,3 +472,94 @@ func TestLoggerOptions(t *testing.T) {
 		}
 	})
 }
+
+func TestEnableLogLevelTrace(t *testing.T) {
+	// Reset logger state
+	logLevel = slog.LevelInfo
+
+	// Apply the option
+	opt := EnableLogLevelTrace()
+	opt()
+
+	if logLevel != LevelTrace {
+		t.Errorf("EnableLogLevelTrace() didn't set the level correctly, got %v, want %v",
+			logLevel, LevelTrace)
+	}
+}
+
+func TestNormalizeAttrs(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []any
+		expected int // Expected number of attributes
+	}{
+		{
+			name:     "empty args",
+			args:     []any{},
+			expected: 0,
+		},
+		{
+			name:     "string key-value pairs",
+			args:     []any{"key1", "value1", "key2", 42},
+			expected: 2,
+		},
+		{
+			name:     "slog.Attr arguments",
+			args:     []any{slog.String("key", "value")},
+			expected: 1,
+		},
+		{
+			name:     "mixed argument types",
+			args:     []any{slog.Int("count", 5), "message", "hello"},
+			expected: 2,
+		},
+		{
+			name:     "malformed arguments (odd count)",
+			args:     []any{"key1", "value1", "orphan_key"},
+			expected: 2, // Should include the orphan key with (MISSING) value
+		},
+		{
+			name:     "non-string keys",
+			args:     []any{123, "value"},
+			expected: 0, // Should skip non-string keys
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attrs := normalizeAttrs(tt.args...)
+			if len(attrs) != tt.expected {
+				t.Errorf("normalizeAttrs() returned %d attributes, want %d",
+					len(attrs), tt.expected)
+			}
+		})
+	}
+}
+
+func TestSetFileHandlerForTesting(t *testing.T) {
+	// Suppress log output
+	defer SuppressLogOutput(t)()
+
+	var buf bytes.Buffer
+
+	// Reset outputs to ensure we're starting fresh
+	outputs = nil
+
+	// Apply the option to add the buffer to outputs
+	opt := SetFileHandlerForTesting(&buf)
+	opt()
+
+	// Initialize the logger but retain our test writer
+	// by using the SetFileHandlerForTesting option during initialization
+	Init(
+		SetFileHandlerForTesting(&buf),
+	)
+
+	// Test by writing a log message
+	L().Info("Test message")
+
+	// Check if the message was logged to our buffer
+	if !strings.Contains(buf.String(), "Test message") {
+		t.Errorf("Message not logged to test writer: %q", buf.String())
+	}
+}
