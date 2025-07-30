@@ -206,12 +206,12 @@ go test ./logo/
 
 ### Check test coverage
 ```bash
-go test -v -coverprofile coverage.txt
+go test -v -coverprofile coverage.out
 ```
 
 #### Generate HTML report
 ```bash
-go tool cover -html coverage.txt -o coverage.html
+go tool cover -html coverage.out -o coverage.html
 ```
 
 ## Enhancements
