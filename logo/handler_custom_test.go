@@ -248,13 +248,25 @@ func TestCustomTextHandler_WithGroup(t *testing.T) {
 		out:       &buf,
 		opts:      opts,
 		attrOrder: attrOrder,
+		attrs:     []slog.Attr{}, // Initialize empty attributes
+		groups:    []string{},    // Initialize empty groups
 	}
 
 	newHandler := handler.WithGroup("test_group")
 
-	// Since WithGroup is a no-op in this implementation, it should return the same handler
-	if newHandler != handler {
-		t.Error("WithGroup() should return the same handler for this implementation")
+	// The WithGroup implementation now correctly creates a new handler
+	if newHandler == handler {
+		t.Error("WithGroup() should return a new handler with the group information")
+	}
+
+	// Check that the new handler has the group information
+	customHandler, ok := newHandler.(*CustomTextHandler)
+	if !ok {
+		t.Fatal("WithGroup() didn't return a CustomTextHandler")
+	}
+
+	if len(customHandler.groups) != 1 || customHandler.groups[0] != "test_group" {
+		t.Errorf("WithGroup() didn't correctly add the group name, groups: %v", customHandler.groups)
 	}
 }
 

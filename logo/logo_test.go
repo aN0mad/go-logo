@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// Mock for os.Exit function to test fatal logging
-var osExit = os.Exit
+// // Mock for os.Exit function to test fatal logging
+// var osExit = os.Exit
 
 func TestInit(t *testing.T) {
 	// Suppress log output for this test
@@ -347,23 +347,33 @@ func TestFatal(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
 
-	// Save the original osExit and restore after test
+	// Save the original osExit function
 	originalOsExit := osExit
-	defer func() { osExit = originalOsExit }()
 
-	exitCode := 0
+	// Create a local variable to capture the exit code
+	var exitCode int
+
+	// Replace osExit with our test version before the test
 	osExit = func(code int) {
 		exitCode = code
-		// Don't actually exit
+		// Don't actually exit - just record the exit code
 	}
 
-	var buf bytes.Buffer
-	Init(SetConsoleOutput(&buf))
+	// Restore the original function when the test completes
+	defer func() {
+		osExit = originalOsExit
+	}()
 
-	// Call Fatal which should call osExit(1)
+	var buf bytes.Buffer
+	Init(
+		SetConsoleOutput(&buf),
+		DisableColors(),
+	)
+
+	// Call Fatal which should trigger our mocked osExit
 	L().Fatal("Fatal message")
 
-	// Check that osExit was called with code 1
+	// Check that our mock was called with code 1
 	if exitCode != 1 {
 		t.Errorf("Fatal() called osExit with code %d, want 1", exitCode)
 	}

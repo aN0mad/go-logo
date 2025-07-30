@@ -21,6 +21,8 @@ type CustomTextHandler struct {
 	out       io.Writer
 	opts      *slog.HandlerOptions
 	attrOrder []string
+	attrs     []slog.Attr
+	groups    []string
 }
 
 // NewCustomTextHandler creates a new text handler with ordered attributes.
@@ -32,10 +34,16 @@ type CustomTextHandler struct {
 // Returns a slog.Handler implementation
 func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler {
 
+	// if opts == nil {
+	// 	opts = &slog.HandlerOptions{}
+	// }
+
 	return &CustomTextHandler{
 		out:       out,
 		opts:      opts,
 		attrOrder: attrOrder, // Use the global attrOrder defined in this package
+		attrs:     []slog.Attr{},
+		groups:    nil,
 	}
 }
 
@@ -76,7 +84,7 @@ func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 			frame, _ := fs.Next()
 			if frame.File != "" {
 				shortFile := frame.File
-				if lastSlash := strings.LastIndex(shortFile, "/"); lastSlash >= 0 {
+				if lastSlash := strings.LastIndex(shortFile, "/"); lastSlash >= 0 { // TODO: Fix to remove short source
 					shortFile = shortFile[lastSlash+1:]
 				}
 				attrs["source"] = fmt.Sprintf("%s:%d", shortFile, frame.Line)
@@ -84,9 +92,16 @@ func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	// Collect other attributes
+	// Process handler attributes (added via With())
+	for _, attr := range h.attrs {
+		if attr.Key != "level" && attr.Key != "msg" && attr.Key != "time" && attr.Key != "source" { // TODO: Replace with not in attrOrder `if !slices.Contains(h.attrOrder, attr.Key) {`
+			attrs[attr.Key] = attr.Value.String()
+		}
+	}
+
+	// Process record attributes
 	r.Attrs(func(a slog.Attr) bool {
-		if a.Key != "level" && a.Key != "msg" && a.Key != "time" && a.Key != "source" {
+		if a.Key != "level" && a.Key != "msg" && a.Key != "time" && a.Key != "source" { // TODO: Replace with not in attrOrder `if !slices.Contains(h.attrOrder, attr.Key) {`
 			// Apply ReplaceAttr if provided
 			if h.opts.ReplaceAttr != nil {
 				a = h.opts.ReplaceAttr(nil, a)
@@ -153,8 +168,34 @@ func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error {
 //   - attrs: The attributes to add to the handler
 //
 // Returns a new handler instance with the attributes
+// WithAttrs implements slog.Handler.WithAttrs.
 func (h *CustomTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return NewCustomTextHandler(h.out, h.opts)
+	// Create a new handler with the same settings
+	newHandler := &CustomTextHandler{
+		out:       h.out,
+		opts:      h.opts,
+		attrOrder: h.attrOrder,
+		attrs:     append([]slog.Attr{}, h.attrs...), // Copy existing attributes
+		groups:    append([]string{}, h.groups...),   // Copy existing groups
+	}
+
+	// Process and store the new attributes
+	for _, attr := range attrs {
+		// Apply ReplaceAttr if set
+		if h.opts != nil && h.opts.ReplaceAttr != nil {
+			attr = h.opts.ReplaceAttr(h.groups, attr)
+		}
+
+		// Skip empty attributes
+		if attr.Equal(slog.Attr{}) {
+			continue
+		}
+
+		// Add the attribute
+		newHandler.attrs = append(newHandler.attrs, attr)
+	}
+
+	return newHandler
 }
 
 // WithGroup implements Handler.WithGroup.
@@ -164,9 +205,23 @@ func (h *CustomTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 //   - name: The group name
 //
 // Returns a handler that adds the group name to the attribute key path
+// WithGroup implements slog.Handler.WithGroup.
 func (h *CustomTextHandler) WithGroup(name string) slog.Handler {
-	// Groups not implemented in this simple handler
-	return h
+	// Skip empty group names
+	if name == "" {
+		return h
+	}
+
+	// Create a new handler with the same settings
+	newHandler := &CustomTextHandler{
+		out:       h.out,
+		opts:      h.opts,
+		attrOrder: h.attrOrder,
+		attrs:     append([]slog.Attr{}, h.attrs...),             // Copy existing attributes
+		groups:    append(append([]string{}, h.groups...), name), // Add the new group
+	}
+
+	return newHandler
 }
 
 // levelToString converts a slog.Level to its string representation.
