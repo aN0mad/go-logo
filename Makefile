@@ -1,6 +1,6 @@
 # Change these variables as necessary.
 MAIN_PACKAGE_PATH=cmd/main.go
-BINARY_NAME=logo
+BINARY_NAME=go-logo
 BIN_DIR=./bin
 VERSION=1.0.0
 
@@ -39,3 +39,4 @@ clean:
 	rm -rf ${BIN_DIR}/*
 	go clean -cache
 	go mod tidy -v
+	mv ./logs /tmp/${BINARY_NAME}-logs-$(shell date +%Y%m%d-%H%M%S) || true
