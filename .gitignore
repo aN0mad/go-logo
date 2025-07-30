@@ -31,4 +31,12 @@ go.work.sum
 bin/
 
 .idea/
+
+# Log files
 logs/
+
+# Go test coverage output
+coverage.out
+coverage.txt
+coverage.html
+*.coverprofile
