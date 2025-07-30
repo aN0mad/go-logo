@@ -24,7 +24,7 @@ func main() {
 	// Initialize logger with channel output
 	logger.Init(
 		logger.SetLevel(slog.LevelDebug),
-		logger.EnableTrace(),
+		logger.EnableStackTraces(),
 		logger.AddChannelOutput(logChan),
 		logger.AddFileOutput(logLocation, 10, 3, 30, true),
 	)

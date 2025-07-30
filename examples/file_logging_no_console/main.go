@@ -17,7 +17,7 @@ func main() {
 	// Initialize logger with file output only (no console)
 	logger.Init(
 		logger.SetLevel(slog.LevelDebug),
-		logger.EnableTrace(),
+		logger.EnableStackTraces(),
 		logger.DisableConsole(), // Disable console output
 		logger.AddFileOutput(logLocation, 10, 3, 30, true),
 	)

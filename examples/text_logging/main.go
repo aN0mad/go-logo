@@ -16,7 +16,7 @@ func main() {
 	// Initialize with default text format
 	logger.Init(
 		logger.SetLevel(slog.LevelDebug),
-		logger.EnableTrace(),
+		logger.EnableStackTraces(),
 		logger.AddSource(),
 		logger.AddFileOutput(logLocation, 10, 3, 30, true),
 	)

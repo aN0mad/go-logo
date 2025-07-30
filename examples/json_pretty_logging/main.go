@@ -16,7 +16,7 @@ func main() {
 	// Initialize with pretty JSON format
 	logger.Init(
 		logger.SetLevel(slog.LevelDebug),
-		logger.EnableTrace(),
+		logger.EnableStackTraces(),
 		logger.UseJSON(true), // Pretty JSON
 		logger.AddSource(),
 		logger.AddFileOutput(logLocation, 10, 3, 30, true),

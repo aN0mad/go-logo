@@ -29,7 +29,7 @@ func main() {
 	// Create a comprehensive logger with all features
 	logger.Init(
 		logger.SetLevel(slog.LevelDebug),
-		logger.EnableTrace(),
+		logger.EnableStackTraces(),
 		logger.AddSource(),
 		logger.UseJSON(true), // Pretty JSON
 		logger.AddFileOutput(logLocation, 10, 3, 30, true),
