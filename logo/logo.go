@@ -59,6 +59,7 @@ var (
 	fileWriters        []*lumberjack.Logger // List of file writers for proper closing
 )
 
+var osExit = os.Exit
 var logger *Logger
 
 // Constants for additional log levels not provided by the standard slog package.
@@ -408,7 +409,7 @@ func (l *Logger) Fatal(msg string, attrs ...any) {
 	rec.AddAttrs(append(custom, filtered...)...)
 
 	_ = l.Handler().Handle(context.Background(), rec)
-	os.Exit(1)
+	osExit(1)
 }
 
 // normalizeAttrs normalizes the attributes passed to the logger.
