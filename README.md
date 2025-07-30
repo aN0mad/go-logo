@@ -221,8 +221,3 @@ go tool cover -html coverage.out -o coverage.html
 - [natefinch](https://github.com/natefinch) for the [Lumberjack](https://github.com/natefinch/lumberjack) package to handle log files and rotations
 - [charmbracelet](https://github.com/charmbracelet) for the [lipgloss](https://github.com/charmbracelet/lipgloss) package for ANSI coloring
 - Docs generated with [gomarkdoc](https://github.com/princjef/gomarkdoc) using `/go/bin/gomarkdoc . > doc.md` within the module directory (`./logo`)
-
-
-# TODO
-- Regenerate docs
-- Regenerate test coverage report
