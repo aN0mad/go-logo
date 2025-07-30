@@ -38,6 +38,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,17 +46,17 @@ import (
 )
 
 var (
-	mu            sync.RWMutex
-	consoleOn     = true
-	outputs       []io.Writer
-	includeSource = false          // Include source file and line number in logs
-	includeTrace  = false          // Include stack trace in logs for log levels other than TRACE (FATAL)
-	logLevel      = slog.LevelInfo // Default log level
-	useJSONFormat = false
-	jsonPretty    = false // Whether to use pretty JSON formatting
-	attrOrder     = []string{"time", "level", "msg", "source"}
-	colorEnabled  = true               // Whether to enable colored output in console logs
-	fileWriters   []*lumberjack.Logger // List of file writers for proper closing
+	mu                 sync.RWMutex
+	consoleOn          = true
+	outputs            []io.Writer
+	includeSource      = false          // Include source file and line number in logs
+	includeStackTraces = false          // Include stack trace in logs for log levels
+	logLevel           = slog.LevelInfo // Default log level
+	useJSONFormat      = false
+	jsonPretty         = false // Whether to use pretty JSON formatting
+	attrOrder          = []string{"time", "level", "msg", "source"}
+	colorEnabled       = true               // Whether to enable colored output in console logs
+	fileWriters        []*lumberjack.Logger // List of file writers for proper closing
 )
 
 var logger *Logger
@@ -103,6 +104,15 @@ func Init(opts ...LoggerOption) {
 	// Reset the logger state
 	outputs = nil
 
+	// Reset to default values before applying options
+	logLevel = slog.LevelInfo // Default to INFO
+	useJSONFormat = false
+	jsonPretty = false
+	includeSource = false
+	includeStackTraces = false
+	consoleOn = true
+	colorEnabled = true
+
 	// Process options
 	for _, opt := range opts {
 		opt()
@@ -145,11 +155,11 @@ func Init(opts ...LoggerOption) {
 	logger = &Logger{slog.New(handler)}
 }
 
-// SetLevel sets the log level for the logger.
-// Only messages at or above this level will be logged.
+// SetLevel sets the minimum log level that will be logged.
+// Any log messages with a level lower than this will be ignored.
 //
 // Parameters:
-//   - level: The minimum log level to capture
+//   - level: The minimum log level to log (e.g., slog.LevelDebug, slog.LevelInfo)
 //
 // Returns a LoggerOption that can be passed to Init()
 func SetLevel(level slog.Level) LoggerOption {
@@ -169,17 +179,24 @@ func DisableColors() LoggerOption {
 	}
 }
 
-// EnableTrace enables trace logging, which is a level below DEBUG.
+// EnableLogLevelTrace enables trace logging level (which is a level below DEBUG).
 // This is useful for capturing detailed information during development or debugging.
-// When trace is enabled, the log level is automatically lowered to include trace messages.
 //
 // Returns a LoggerOption that can be passed to Init()
-func EnableTrace() LoggerOption {
+func EnableLogLevelTrace() LoggerOption {
 	return func() {
-		includeTrace = true
-		if logLevel > LevelTrace {
-			logLevel = LevelTrace
-		}
+		logLevel = LevelTrace
+	}
+}
+
+// EnableStackTraces enables stack trace inclusion in log messages.
+// When enabled, a stack trace will be included with log messages,
+// which can be helpful for debugging and error tracking.
+//
+// Returns a LoggerOption that can be passed to Init()
+func EnableStackTraces() LoggerOption {
+	return func() {
+		includeStackTraces = true
 	}
 }
 
@@ -231,23 +248,23 @@ func DisableConsole() LoggerOption {
 	}
 }
 
-// AddFileOutput adds a file output to the logger.
-// It uses the Lumberjack package to manage log file rotation.
-// This allows for log files to be rotated based on size, number of backups, and age.
+// AddFileOutput adds file output to the logger with rotation support.
+// This allows log messages to be written to a file, with automatic rotation
+// when the file reaches the specified maximum size.
 //
 // Parameters:
-//   - path: Path to the log file
-//   - maxSize: Maximum size of the log file in megabytes before it's rotated
-//   - backups: Maximum number of old log files to retain
-//   - age: Maximum number of days to retain old log files
-//   - compress: Whether to compress old log files
+//   - filepath: The path to the log file
+//   - maxSizeMB: Maximum size of the log file in megabytes before rotation
+//   - maxBackups: Maximum number of old log files to retain
+//   - maxAgeDays: Maximum number of days to retain old log files
+//   - compress: If true, rotated log files will be compressed using gzip
 //
 // Returns a LoggerOption that can be passed to Init()
-func AddFileOutput(path string, maxSize, backups, age int, compress bool) LoggerOption {
+func AddFileOutput(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool) LoggerOption {
 	return func() {
-		lj := NewLumberjackWriter(path, maxSize, backups, age, compress)
-		outputs = append(outputs, lj)
-		fileWriters = append(fileWriters, lj) // Track the writer for closing
+		w := NewLumberjackWriter(filepath, maxSizeMB, maxBackups, maxAgeDays, compress)
+		fileWriters = append(fileWriters, w)
+		outputs = append(outputs, w)
 	}
 }
 
@@ -299,21 +316,28 @@ func L() *Logger {
 	return logger
 }
 
-// WithContext returns a logger with the request ID from the context.
-// This should be customized based on your context handling for each application.
-//
-// Parameters:
-//   - ctx: A context.Context that may contain a request_id value
-//
-// Returns a Logger that includes the request ID in its attributes if present
-func WithContext(ctx context.Context) *Logger {
-	mu.RLock()
-	defer mu.RUnlock()
-	if id, ok := ctx.Value("request_id").(string); ok {
-		return &Logger{logger.With("request_id", id)}
-	}
-	return logger
-}
+// // WithContext returns a logger with the request ID from the context.
+// // This should be customized based on your context handling for each application.
+// //
+// // Parameters:
+// //   - ctx: A context.Context that may contain a request_id value
+// //
+// // Returns a Logger that includes the request ID in its attributes if present
+// func WithContext(ctx context.Context) *Logger {
+// 	if ctx == nil {
+// 		return L()
+// 	}
+
+// 	// Extract request ID from context if present
+// 	if requestID, ok := ctx.Value("request_id").(string); ok {
+// 		// The issue is here - we need to create a new slog.Logger with the attribute
+// 		baseLogger := L().Logger
+// 		newSlogLogger := baseLogger.With("request_id", requestID)
+// 		return &Logger{Logger: newSlogLogger}
+// 	}
+
+// 	return L()
+// }
 
 // Trace logs with a level below DEBUG and includes a stack trace.
 // This is useful for very detailed diagnostic information typically
@@ -376,7 +400,7 @@ func (l *Logger) Fatal(msg string, attrs ...any) {
 		slog.String("source", fmt.Sprintf("%s:%d (%s)", file, line, fn)),
 	}
 
-	if includeTrace {
+	if includeStackTraces {
 		custom = append(custom, slog.String("trace", string(debug.Stack())))
 	}
 
@@ -425,4 +449,20 @@ func normalizeAttrs(args ...any) []slog.Attr {
 // Returns the current time
 func timeNow() time.Time {
 	return time.Now()
+}
+
+// SetFileHandlerForTesting is a special helper for test files
+// to ensure proper handling of file outputs during testing
+func SetFileHandlerForTesting(w io.Writer) LoggerOption {
+	return func() {
+		// Add the provided writer as a file output
+		outputs = append(outputs, w)
+	}
+}
+
+// isTestEnv checks if we're running in a test environment
+func isTestEnv() bool {
+	return strings.HasSuffix(os.Args[0], ".test") ||
+		strings.Contains(os.Args[0], "/go-build") ||
+		os.Getenv("GO_TESTING") == "1"
 }
