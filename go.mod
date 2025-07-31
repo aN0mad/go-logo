@@ -1,4 +1,4 @@
-module go-logo
+module github.com/aN0mad/go-logo
 
 go 1.23.11
 
