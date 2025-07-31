@@ -5,8 +5,9 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	logger "logo/logo"
 	"time"
+
+	logger "github.com/aN0mad/go-logo/logo"
 )
 
 var (

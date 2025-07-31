@@ -5,7 +5,8 @@ package main
 import (
 	"context"
 	"log/slog"
-	logger "logo/logo"
+
+	logger "github.com/aN0mad/go-logo/logo"
 )
 
 var (
