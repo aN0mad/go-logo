@@ -1,4 +1,4 @@
-// Package logger provides a flexible and extensible structured logging framework
+// Package logo provides a flexible and extensible structured logging framework
 // built on top of Go's standard library slog package. It enhances slog with features
 // like customizable outputs, log levels including TRACE and FATAL, colorized console
 // output, file rotation, log channels, and support for JSON formatting.
@@ -8,27 +8,27 @@
 //
 // Basic usage:
 //
-//	logger.Init(
-//		logger.SetLevel(slog.LevelInfo),
-//		logger.EnableTrace(),
-//		logger.AddSource(),
+//	logo.Init(
+//		logo.SetLevel(slog.LevelInfo),
+//		logo.EnableTrace(),
+//		logo.AddSource(),
 //	)
 //
-//	log := logger.L()
+//	log := logo.L()
 //	log.Info("Hello, world!", "user", "gopher")
 //
 // For file logging with rotation:
 //
-//	logger.Init(
-//		logger.AddFileOutput("/path/to/log.file", 10, 3, 30, true),
+//	logo.Init(
+//		logo.AddFileOutput("/path/to/log.file", 10, 3, 30, true),
 //	)
 //
 // For JSON output:
 //
-//	logger.Init(
-//		logger.UseJSON(true), // true for pretty-printed JSON
+//	logo.Init(
+//		logo.UseJSON(true), // true for pretty-printed JSON
 //	)
-package logger
+package logo
 
 import (
 	"context"

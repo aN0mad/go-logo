@@ -1,8 +1,8 @@
-// Package logger provides functionality for structured logging.
+// Package logo provides functionality for structured logging.
 //
 // This file contains functions to query and manipulate the current log level
 // in the logger configuration.
-package logger
+package logo
 
 import "log/slog"
 

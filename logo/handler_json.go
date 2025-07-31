@@ -1,8 +1,8 @@
-// Package logger provides functionality for structured logging.
+// Package logo provides functionality for structured logging.
 //
 // This file contains the JSON handler implementation which formats log messages
 // as JSON objects, with optional pretty-printing.
-package logger
+package logo
 
 import (
 	"context"

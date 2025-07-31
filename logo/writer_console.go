@@ -1,8 +1,8 @@
-// Package logger provides functionality for structured logging.
+// Package logo provides functionality for structured logging.
 //
 // This file contains the console writer implementation with support for colorized
 // and styled output to make log messages more readable in terminal environments.
-package logger
+package logo
 
 import (
 	"context"

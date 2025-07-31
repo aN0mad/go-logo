@@ -1,8 +1,8 @@
-// Package logger provides functionality for structured logging.
+// Package logo provides functionality for structured logging.
 //
 // This file contains the file writer implementation which supports log rotation
 // through the lumberjack package.
-package logger
+package logo
 
 import "github.com/aN0mad/lumberjack/v2"
 

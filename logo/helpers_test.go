@@ -1,8 +1,8 @@
-// Package logger provides functionality for structured logging.
+// Package logo provides functionality for structured logging.
 //
 // This file contains utility functions for testing to help with
 // common tasks like suppressing log output during tests.
-package logger
+package logo
 
 import (
 	"io"

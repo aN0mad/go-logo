@@ -1,8 +1,8 @@
-// Package logger provides functionality for structured logging.
+// Package logo provides functionality for structured logging.
 //
 // This file contains the channel writer implementation which allows log messages
 // to be sent to a Go channel for asynchronous processing.
-package logger
+package logo
 
 import (
 	"strings"

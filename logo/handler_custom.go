@@ -1,8 +1,8 @@
-// Package logger provides functionality for structured logging.
+// Package logo provides functionality for structured logging.
 //
 // This file contains the custom text handler implementation which formats
 // log messages in a human-readable text format with ordered attributes.
-package logger
+package logo
 
 import (
 	"context"
