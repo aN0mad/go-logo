@@ -1,4 +1,4 @@
-module logo
+module go-logo
 
 go 1.23.11
 
