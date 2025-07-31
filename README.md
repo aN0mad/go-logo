@@ -37,7 +37,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	logger "logo/logo"
+	logger "github.com/aN0mad/go-logo/logo"
 )
 
 func main() {
