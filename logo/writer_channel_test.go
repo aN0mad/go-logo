@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+// TestNewChannelWriter tests the creation of a ChannelWriter.
+// It verifies that the writer is properly initialized with the provided channel.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestNewChannelWriter(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -21,6 +26,11 @@ func TestNewChannelWriter(t *testing.T) {
 	}
 }
 
+// TestChannelWriter_Write_SuccessfulWrite tests the Write method with a valid message.
+// It verifies that the message is correctly written to the channel.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestChannelWriter_Write_SuccessfulWrite(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -50,6 +60,11 @@ func TestChannelWriter_Write_SuccessfulWrite(t *testing.T) {
 	}
 }
 
+// TestChannelWriter_Write_EmptyMessage tests the Write method with an empty message.
+// It verifies that empty messages are properly handled and not sent to the channel.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestChannelWriter_Write_EmptyMessage(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -77,6 +92,11 @@ func TestChannelWriter_Write_EmptyMessage(t *testing.T) {
 	}
 }
 
+// TestChannelWriter_Write_WhitespaceMessage tests the Write method with whitespace-only messages.
+// It verifies that messages containing only whitespace are properly handled.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestChannelWriter_Write_WhitespaceMessage(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -106,6 +126,11 @@ func TestChannelWriter_Write_WhitespaceMessage(t *testing.T) {
 	}
 }
 
+// TestChannelWriter_Write_FullChannel tests the Write method when the channel is full.
+// It verifies that writing to a full channel doesn't block and doesn't lose data.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestChannelWriter_Write_FullChannel(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -148,6 +173,11 @@ func TestChannelWriter_Write_FullChannel(t *testing.T) {
 	}
 }
 
+// TestChannelWriter_Write_MultipleMessages tests writing multiple messages to the channel.
+// It verifies that multiple messages are correctly written to the channel in order.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestChannelWriter_Write_MultipleMessages(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()

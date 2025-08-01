@@ -54,20 +54,46 @@ func SuppressLogOutput(t *testing.T) func() {
 //   - w: The io.Writer to use for console output
 //
 // Returns:
-//   - LoggerOption: A logger option function that can be passed to Init()
+//   - LoggerOption: A logger option function that can be passed to Init() or NewLogger()
 func SetConsoleOutput(w io.Writer) LoggerOption {
-	return func() {
-		// Always clear any existing outputs first
-		outputs = nil
+	return func(ctx *loggerContext) {
+		// Find and replace any existing console writers
+		// Look for StyledConsoleWriter or default os.Stdout/os.Stderr writers
+		hasConsoleWriter := false
+		for i, output := range ctx.outputs {
+			if _, ok := output.(*StyledConsoleWriter); ok {
+				// Replace existing styled writer
+				if ctx.useJSONFormat {
+					ctx.outputs[i] = w
+				} else {
+					ctx.outputs[i] = NewStyledConsoleWriter(w, ctx)
+				}
+				hasConsoleWriter = true
+				break
+			}
 
-		// Add the provided writer as the console output
-		if !useJSONFormat {
-			outputs = append(outputs, NewStyledConsoleWriter(w))
-		} else {
-			outputs = append(outputs, w)
+			// Also check for direct stdout/stderr references
+			if output == os.Stdout || output == os.Stderr {
+				if ctx.useJSONFormat {
+					ctx.outputs[i] = w
+				} else {
+					ctx.outputs[i] = NewStyledConsoleWriter(w, ctx)
+				}
+				hasConsoleWriter = true
+				break
+			}
+		}
+
+		// If no console writer found, add a new one
+		if !hasConsoleWriter {
+			if ctx.useJSONFormat {
+				ctx.outputs = append(ctx.outputs, w)
+			} else {
+				ctx.outputs = append(ctx.outputs, NewStyledConsoleWriter(w, ctx))
+			}
 		}
 
 		// Mark that we've handled console output
-		consoleOn = false
+		ctx.consoleOn = false
 	}
 }

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	logLocation = "./logs/file_example.log"
+	logLocation = "./logs/file_logging_no_console_example.log"
 )
 
 func main() {

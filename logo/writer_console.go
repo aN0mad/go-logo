@@ -20,17 +20,38 @@ import (
 // It detects log levels and applies appropriate styling to make logs more readable.
 type StyledConsoleWriter struct {
 	out io.Writer
+	ctx *loggerContext // Reference to the logger context for configuration
 }
 
-// NewStyledConsoleWriter creates a new StyledConsoleWriter instance.
+// NewStyledConsoleWriter creates a new console writer that applies styling to log output.
+// It applies colors and formatting based on log level and configuration.
 //
 // Parameters:
-//   - w: The underlying io.Writer where formatted output will be written (typically os.Stdout)
+//   - out: The output writer where log messages will be written
+//   - ctx: Logger context containing configuration options like color settings
 //
 // Returns:
-//   - *StyledConsoleWriter: A new styled console writer that implements io.Writer
-func NewStyledConsoleWriter(w io.Writer) *StyledConsoleWriter {
-	return &StyledConsoleWriter{out: w}
+//   - *StyledConsoleWriter: A new console writer with styling capabilities
+func NewStyledConsoleWriter(w io.Writer, ctx *loggerContext) *StyledConsoleWriter {
+	return &StyledConsoleWriter{
+		out: w,
+		ctx: ctx,
+	}
+}
+
+// NewDefaultStyledConsoleWriter creates a styled console writer with default settings.
+// It creates a writer that uses global configuration rather than a specific context.
+//
+// Parameters:
+//   - out: The output writer where log messages will be written
+//
+// Returns:
+//   - *StyledConsoleWriter: A new console writer with default styling configuration
+func NewDefaultStyledConsoleWriter(w io.Writer) *StyledConsoleWriter {
+	return &StyledConsoleWriter{
+		out: w,
+		ctx: nil, // Will use global defaults
+	}
 }
 
 // logLevelStyles defines the styling for each log level in console output.
@@ -58,8 +79,14 @@ func (cw *StyledConsoleWriter) Write(p []byte) (int, error) {
 	msg := string(p)
 	level := detectLevel(msg)
 
+	// Determine if colors should be enabled
+	colorEnabledForThisWriter := COLORENABLED
+	if cw.ctx != nil {
+		colorEnabledForThisWriter = cw.ctx.colorEnabled
+	}
+
 	// If colors are disabled, use a simpler rendering
-	if !colorEnabled {
+	if !colorEnabledForThisWriter {
 		timestamp := time.Now().Format("15:04:05")
 		line := fmt.Sprintf("[%s] %s", timestamp, strings.TrimSpace(msg))
 		return fmt.Fprintln(cw.out, line)
@@ -78,14 +105,14 @@ func (cw *StyledConsoleWriter) Write(p []byte) (int, error) {
 	return fmt.Fprintln(cw.out, line)
 }
 
-// detectLevel extracts the log level from a log message using the LEVEL=<LOG_LEVEL> pattern.
-// It dynamically matches against the known levels from the logLevelStyles map.
+// detectLevel extracts the log level from a log message.
+// It parses the message string to find the level indicator.
 //
 // Parameters:
-//   - s: The log message to analyze
+//   - message: The log message to parse
 //
 // Returns:
-//   - string: The detected log level, or empty string if not detected
+//   - string: The detected log level, or empty string if none found
 func detectLevel(s string) string {
 	s = strings.ToUpper(s)
 	for level := range logLevelStyles {
@@ -97,23 +124,24 @@ func detectLevel(s string) string {
 	return ""
 }
 
-// contextWithCaller creates a context with the caller's file and line number.
-// This is useful for logging and debugging purposes, providing context about where the log message originated.
+// contextWithCaller creates a context that includes caller information.
+// It captures the current stack frame information for source code location.
 //
 // Returns:
-//   - context.Context: A context with the caller information stored as a value
+//   - context.Context: A context containing caller information
 func contextWithCaller() context.Context {
 	_, file, line, _ := runtime.Caller(2)
 	return context.WithValue(context.Background(), "caller", fmt.Sprintf("%s:%d", file, line))
 }
 
-// extractSource extracts source file information from a log message.
+// extractSource extracts source file and line information from a log message.
+// It parses the message string to find source code location information.
 //
 // Parameters:
-//   - s: The log message to analyze
+//   - message: The log message to parse
 //
 // Returns:
-//   - string: The source file information, or empty string if not found
+//   - string: The extracted source information, or empty string if none found
 func extractSource(s string) string {
 	re := regexp.MustCompile(`\bsource=([^ ]+)`)
 	matches := re.FindStringSubmatch(s)
@@ -123,11 +151,11 @@ func extractSource(s string) string {
 	return ""
 }
 
-// removeSourceFromMessage removes the source information from a log message.
-// This helps prevent duplication when the source is already displayed separately.
+// removeSourceFromMessage removes source information from a log message.
+// This is useful when the source should be displayed separately from the message.
 //
 // Parameters:
-//   - msg: The log message to process
+//   - message: The log message containing source information
 //
 // Returns:
 //   - string: The message with source information removed

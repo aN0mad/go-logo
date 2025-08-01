@@ -3,6 +3,7 @@ package logo
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,9 +12,11 @@ import (
 	"time"
 )
 
-// // Mock for os.Exit function to test fatal logging
-// var osExit = os.Exit
-
+// TestInit tests the initialization of the global logger with various options.
+// It verifies that the logger is properly configured with the provided options.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestInit(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -28,8 +31,8 @@ func TestInit(t *testing.T) {
 		}
 
 		// Verify default level is INFO
-		if logLevel != slog.LevelInfo {
-			t.Errorf("Default log level is %v, want %v", logLevel, slog.LevelInfo)
+		if logger.ctx.logLevel != slog.LevelInfo {
+			t.Errorf("Default log level is %v, want %v", logger.ctx.logLevel, slog.LevelInfo)
 		}
 	})
 
@@ -51,22 +54,22 @@ func TestInit(t *testing.T) {
 		}
 
 		// Verify custom level is set
-		if logLevel != slog.LevelDebug {
-			t.Errorf("Log level is %v, want %v", logLevel, slog.LevelDebug)
+		if logger.ctx.logLevel != slog.LevelDebug {
+			t.Errorf("Log level is %v, want %v", logger.ctx.logLevel, slog.LevelDebug)
 		}
 
 		// Verify stack traces are enabled
-		if !includeStackTraces {
-			t.Error("Trace should be enabled")
+		if !logger.ctx.includeStackTraces {
+			t.Error("Stack traces should be enabled")
 		}
 
 		// Verify source is enabled
-		if !includeSource {
+		if !logger.ctx.includeSource {
 			t.Error("Source should be enabled")
 		}
 
 		// Verify colors are disabled
-		if colorEnabled {
+		if logger.ctx.colorEnabled {
 			t.Error("Colors should be disabled")
 		}
 
@@ -79,6 +82,11 @@ func TestInit(t *testing.T) {
 	})
 }
 
+// TestLoggerMethods tests the various logging methods provided by the Logger.
+// It verifies that each method correctly formats and outputs messages at the appropriate level.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestLoggerMethods(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -172,6 +180,11 @@ func TestLoggerMethods(t *testing.T) {
 	})
 }
 
+// TestContextLogger tests creating and using loggers with context information.
+// It verifies that context values are correctly included in log output.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestContextLogger(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -229,6 +242,11 @@ func TestContextLogger(t *testing.T) {
 	}
 }
 
+// TestFileOutput tests logging to file outputs.
+// It verifies that log messages are correctly written to the configured log file.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestFileOutput(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -242,16 +260,16 @@ func TestFileOutput(t *testing.T) {
 
 	logFile := filepath.Join(tempDir, "test.log")
 
-	// Initialize the logger with file output
-	Init(
+	// Create a logger with file output
+	fileLogger := NewLogger(
 		AddFileOutput(logFile, 10, 3, 30, false),
 	)
 
 	// Log some test messages
-	L().Info("This is a file test message", "key", "value")
+	fileLogger.Info("This is a file test message", "key", "value")
 
 	// Close the logger to ensure all file handles are closed and flushed
-	err = Close()
+	err = fileLogger.Close()
 	if err != nil {
 		t.Errorf("Failed to close logger: %v", err)
 	}
@@ -276,6 +294,11 @@ func TestFileOutput(t *testing.T) {
 	}
 }
 
+// TestJSONOutput tests JSON formatted logging.
+// It verifies that log messages are correctly formatted as JSON with the expected structure.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestJSONOutput(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -317,6 +340,11 @@ func TestJSONOutput(t *testing.T) {
 	}
 }
 
+// TestChannelOutput tests logging to channel outputs.
+// It verifies that log messages are correctly sent to the configured channel.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestChannelOutput(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -343,6 +371,11 @@ func TestChannelOutput(t *testing.T) {
 	}
 }
 
+// TestFatal tests the Fatal logging method.
+// It verifies that the method correctly logs the message and calls os.Exit with code 1.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestFatal(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -384,109 +417,135 @@ func TestFatal(t *testing.T) {
 	}
 }
 
+// TestLoggerOptions tests the functional options used to configure the logger.
+// It verifies that each option correctly modifies the logger's configuration.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestLoggerOptions(t *testing.T) {
-	// Test each logger option individually
+	// Test each logger option with the context-based approach
 
 	t.Run("SetLevel", func(t *testing.T) {
-		// Reset logger state
-		logLevel = slog.LevelInfo
+		ctx := &loggerContext{
+			logLevel: slog.LevelInfo,
+		}
 
 		// Apply the option
 		opt := SetLevel(slog.LevelError)
-		opt()
+		opt(ctx)
 
-		if logLevel != slog.LevelError {
-			t.Errorf("SetLevel() didn't set the level correctly, got %v, want %v", logLevel, slog.LevelError)
+		if ctx.logLevel != slog.LevelError {
+			t.Errorf("SetLevel() didn't set the level correctly, got %v, want %v",
+				ctx.logLevel, slog.LevelError)
 		}
 	})
 
 	t.Run("DisableColors", func(t *testing.T) {
-		// Reset logger state
-		colorEnabled = true
+		ctx := &loggerContext{
+			colorEnabled: true,
+		}
 
 		// Apply the option
 		opt := DisableColors()
-		opt()
+		opt(ctx)
 
-		if colorEnabled {
+		if ctx.colorEnabled {
 			t.Error("DisableColors() didn't disable colors")
 		}
 	})
 
 	t.Run("EnableStackTraces", func(t *testing.T) {
-		// Reset logger state
-		includeStackTraces = false
+		ctx := &loggerContext{
+			includeStackTraces: false,
+		}
 
 		// Apply the option
 		opt := EnableStackTraces()
-		opt()
+		opt(ctx)
 
-		if !includeStackTraces {
+		if !ctx.includeStackTraces {
 			t.Error("EnableStackTraces() didn't enable stack traces")
 		}
 	})
 
 	t.Run("AddSource", func(t *testing.T) {
-		// Reset logger state
-		includeSource = false
+		ctx := &loggerContext{
+			includeSource: false,
+		}
 
 		// Apply the option
 		opt := AddSource()
-		opt()
+		opt(ctx)
 
-		if !includeSource {
+		if !ctx.includeSource {
 			t.Error("AddSource() didn't enable source")
 		}
 	})
 
 	t.Run("UseJSON", func(t *testing.T) {
-		// Reset logger state
-		useJSONFormat = false
-		jsonPretty = false
+		ctx := &loggerContext{
+			useJSONFormat: false,
+			jsonPretty:    false,
+		}
 
 		// Apply the option with pretty printing
 		opt := UseJSON(true)
-		opt()
+		opt(ctx)
 
-		if !useJSONFormat {
+		if !ctx.useJSONFormat {
 			t.Error("UseJSON() didn't enable JSON format")
 		}
 
-		if !jsonPretty {
+		if !ctx.jsonPretty {
 			t.Error("UseJSON(true) didn't enable pretty printing")
 		}
 
 		// Test without pretty printing
-		useJSONFormat = false
-		jsonPretty = false
+		ctx = &loggerContext{
+			useJSONFormat: false,
+			jsonPretty:    false,
+		}
 
 		opt = UseJSON(false)
-		opt()
+		opt(ctx)
 
-		if !useJSONFormat {
+		if !ctx.useJSONFormat {
 			t.Error("UseJSON() didn't enable JSON format")
 		}
 
-		if jsonPretty {
+		if ctx.jsonPretty {
 			t.Error("UseJSON(false) didn't disable pretty printing")
 		}
 	})
 }
 
+// TestEnableLogLevelTrace tests the EnableLogLevelTrace option.
+// It verifies that this option correctly sets the logger's level to LevelTrace.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestEnableLogLevelTrace(t *testing.T) {
-	// Reset logger state
-	logLevel = slog.LevelInfo
+	// Create a context with default level
+	ctx := &loggerContext{
+		logLevel: slog.LevelInfo,
+	}
 
-	// Apply the option
+	// Apply the option to the context
 	opt := EnableLogLevelTrace()
-	opt()
+	opt(ctx)
 
-	if logLevel != LevelTrace {
+	// Check that the context's log level was updated
+	if ctx.logLevel != LevelTrace {
 		t.Errorf("EnableLogLevelTrace() didn't set the level correctly, got %v, want %v",
-			logLevel, LevelTrace)
+			ctx.logLevel, LevelTrace)
 	}
 }
 
+// TestNormalizeAttrs tests the normalizeAttrs function.
+// It verifies that the function correctly normalizes various attribute formats.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestNormalizeAttrs(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -536,30 +595,205 @@ func TestNormalizeAttrs(t *testing.T) {
 	}
 }
 
+// TestSetFileHandlerForTesting tests the SetFileHandlerForTesting option.
+// It verifies that this option correctly configures a writer for testing.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestSetFileHandlerForTesting(t *testing.T) {
 	// Suppress log output
 	defer SuppressLogOutput(t)()
 
 	var buf bytes.Buffer
 
-	// Reset outputs to ensure we're starting fresh
-	outputs = nil
+	// Create a context to apply the option to
+	ctx := &loggerContext{}
 
-	// Apply the option to add the buffer to outputs
+	// Apply the option to add the buffer to the context's outputs
 	opt := SetFileHandlerForTesting(&buf)
-	opt()
+	opt(ctx)
 
-	// Initialize the logger but retain our test writer
-	// by using the SetFileHandlerForTesting option during initialization
-	Init(
+	// Check that the buffer was added to the outputs
+	if len(ctx.outputs) != 1 {
+		t.Errorf("SetFileHandlerForTesting() didn't add output, got %d outputs", len(ctx.outputs))
+	}
+
+	// Create a logger with the test buffer
+	testLogger := NewLogger(
 		SetFileHandlerForTesting(&buf),
 	)
 
 	// Test by writing a log message
-	L().Info("Test message")
+	testLogger.Info("Test message")
 
 	// Check if the message was logged to our buffer
 	if !strings.Contains(buf.String(), "Test message") {
 		t.Errorf("Message not logged to test writer: %q", buf.String())
+	}
+}
+
+// TestFileAndConsoleLogger tests logging to both file and console simultaneously.
+// It verifies that log messages are correctly written to both outputs.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
+func TestFileAndConsoleLogger(t *testing.T) {
+	// Suppress log output for this test
+	defer SuppressLogOutput(t)()
+
+	// Create a temporary directory for test files
+	tempDir, err := os.MkdirTemp("", "logger-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	logFile := filepath.Join(tempDir, "multi.log")
+	t.Logf("Using log file path: %s", logFile)
+
+	// Create buffer for console output
+	var buf bytes.Buffer
+
+	// Create a logger with BOTH console and file output properly configured
+	multiLogger := NewLogger(
+		AddFileOutput(logFile, 10, 3, 30, false),
+		SetLevel(slog.LevelDebug),
+		SetConsoleOutput(&buf), // Use the helper function to set console output
+	)
+
+	// Write multiple messages to increase chances of flushing
+	multiLogger.Info("Test both outputs", "type", "multi")
+	multiLogger.Debug("Another test message")
+	multiLogger.Error("Error message for testing")
+
+	// Force sync by closing the logger
+	err = multiLogger.Close()
+	if err != nil {
+		t.Errorf("Failed to close logger: %v", err)
+	}
+
+	// Add delay to ensure filesystem operations complete
+	time.Sleep(200 * time.Millisecond)
+
+	// Check if the file exists and get its size
+	fileInfo, err := os.Stat(logFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			t.Fatalf("Log file doesn't exist: %s", logFile)
+		}
+		t.Fatalf("Error checking log file: %v", err)
+	}
+	t.Logf("Log file exists with size: %d bytes", fileInfo.Size())
+
+	// List directory contents for debugging
+	files, _ := os.ReadDir(tempDir)
+	var fileNames []string
+	for _, f := range files {
+		info, _ := f.Info()
+		fileNames = append(fileNames, fmt.Sprintf("%s (%d bytes)", f.Name(), info.Size()))
+	}
+	t.Logf("Directory contents: %v", fileNames)
+
+	// Check console output
+	consoleOutput := buf.String()
+	t.Logf("Console output length: %d bytes", len(consoleOutput))
+	t.Logf("Console output content: %q", consoleOutput)
+
+	if !strings.Contains(consoleOutput, "Test both outputs") {
+		t.Errorf("Console output doesn't contain the message, got: %q", consoleOutput)
+	}
+
+	// Check file output
+	fileContent, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+
+	fileOutput := string(fileContent)
+	t.Logf("File content (%d bytes): %q", len(fileOutput), fileOutput)
+
+	if !strings.Contains(fileOutput, "Test both outputs") {
+		t.Error("File output doesn't contain the message")
+	}
+	if !strings.Contains(fileOutput, "type=multi") {
+		t.Error("File output doesn't contain the attribute")
+	}
+}
+
+// TestMultipleLoggers tests creating and using multiple independent logger instances.
+// It verifies that each logger maintains its own configuration.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
+func TestMultipleLoggers(t *testing.T) {
+	// Suppress log output for this test
+	defer SuppressLogOutput(t)()
+
+	// Create buffers for capturing output
+	var buf1, buf2 bytes.Buffer
+
+	// Create first logger with debug level and direct console output to buffer
+	logger1 := NewLogger(
+		SetLevel(slog.LevelDebug),
+		DisableColors(),
+		SetConsoleOutput(&buf1), // Use helper function instead of manual replacement
+	)
+
+	// Create second logger with error level and direct console output to buffer
+	logger2 := NewLogger(
+		SetLevel(slog.LevelError),
+		DisableColors(),
+		SetConsoleOutput(&buf2), // Use helper function instead of manual replacement
+	)
+
+	// Test that levels work independently
+	logger1.Debug("Debug message") // Should appear in buf1
+	logger1.Error("Error message") // Should appear in buf1
+
+	logger2.Debug("Debug message") // Should NOT appear in buf2
+	logger2.Error("Error message") // Should appear in buf2
+
+	// Check logger1 output
+	output1 := buf1.String()
+	t.Logf("Logger1 output: %q", output1) // Add debugging output
+	if !strings.Contains(output1, "Debug message") {
+		t.Error("Logger1 should log debug messages")
+	}
+	if !strings.Contains(output1, "Error message") {
+		t.Error("Logger1 should log error messages")
+	}
+
+	// Check logger2 output
+	output2 := buf2.String()
+	t.Logf("Logger2 output: %q", output2) // Add debugging output
+	if strings.Contains(output2, "Debug message") {
+		t.Error("Logger2 should NOT log debug messages")
+	}
+	if !strings.Contains(output2, "Error message") {
+		t.Error("Logger2 should log error messages")
+	}
+
+	// Test that modifying one logger doesn't affect the other
+	SetLoggerLevel(logger1, slog.LevelError)
+
+	// Reset buffers
+	buf1.Reset()
+	buf2.Reset()
+
+	logger1.Debug("Another debug message") // Should NOT appear in buf1 now
+	logger2.Debug("Another debug message") // Should NOT appear in buf2
+
+	// Add some messages that should appear
+	logger1.Error("Error after level change")
+	logger2.Error("Error from logger2")
+
+	t.Logf("Logger1 output after level change: %q", buf1.String())
+
+	if strings.Contains(buf1.String(), "Another debug message") {
+		t.Error("Logger1 should NOT log debug messages after level change")
+	}
+
+	if !strings.Contains(buf1.String(), "Error after level change") {
+		t.Error("Logger1 should still log error messages after level change")
 	}
 }

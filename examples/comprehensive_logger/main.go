@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	logLocation = "./logs/comprehensive.log"
+	logLocation = "./logs/comprehensive_logger_example.log"
 )
 
 func main() {

@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+// TestNewJSONHandler tests the creation of a JSONHandler.
+// It verifies that the handler is properly initialized with the provided parameters.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestNewJSONHandler(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -67,6 +72,11 @@ func TestNewJSONHandler(t *testing.T) {
 	}
 }
 
+// TestJSONHandler_Enabled tests the Enabled method of JSONHandler.
+// It verifies that the method correctly determines whether a log level should be processed.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestJSONHandler_Enabled(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -116,6 +126,11 @@ func TestJSONHandler_Enabled(t *testing.T) {
 	}
 }
 
+// TestJSONHandler_Handle tests the Handle method of JSONHandler.
+// It verifies that the method correctly formats log records as JSON.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestJSONHandler_Handle(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -200,6 +215,11 @@ func TestJSONHandler_Handle(t *testing.T) {
 	}
 }
 
+// TestJSONHandler_Handle_WithSource tests the Handle method with source information.
+// It verifies that source information is correctly included in the JSON output when enabled.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestJSONHandler_Handle_WithSource(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -235,6 +255,11 @@ func TestJSONHandler_Handle_WithSource(t *testing.T) {
 	}
 }
 
+// TestJSONHandler_WithAttrs tests the WithAttrs method of JSONHandler.
+// It verifies that the method correctly creates a new handler with the provided attributes.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestJSONHandler_WithAttrs(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -265,6 +290,11 @@ func TestJSONHandler_WithAttrs(t *testing.T) {
 	}
 }
 
+// TestJSONHandler_WithGroup tests the WithGroup method of JSONHandler.
+// It verifies the behavior of grouping in the JSON handler implementation.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestJSONHandler_WithGroup(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -287,7 +317,11 @@ func TestJSONHandler_WithGroup(t *testing.T) {
 	}
 }
 
-// Test both handlers together for consistency
+// TestHandlerConsistency tests the consistency between JSONHandler and CustomTextHandler.
+// It verifies that both handlers process the same log record in a consistent manner.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestHandlerConsistency(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()

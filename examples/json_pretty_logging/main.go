@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	logLocation = "./logs/pretty_json_example.log"
+	logLocation = "./logs/pretty_json_logging_example.log"
 )
 
 func main() {
