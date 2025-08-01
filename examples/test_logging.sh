@@ -24,6 +24,9 @@ go run ./examples/context_logger.go
 echo -e "\n===== Running Comprehensive Logger Example ====="
 go run ./examples/all_features_logger.go
 
+echo -e "\n===== Running Multiple Loggers Example ====="
+go run ./examples/multiple_loggers/main.go
+
 echo -e "\n===== All examples completed! ====="
 echo "Log files can be found in ./logs/"
 ls -la ./logs/

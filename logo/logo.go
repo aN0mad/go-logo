@@ -36,6 +36,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"sync"
@@ -49,34 +50,34 @@ var (
 	mu sync.RWMutex
 
 	// consoleOn determines whether console output is enabled
-	consoleOn = true
+	CONSOLEON = true
 
 	// outputs is the list of writers to send log output to
-	outputs []io.Writer
+	OUTPUTS []io.Writer
 
 	// includeSource determines whether to include source file and line information in logs
-	includeSource = false
+	INCLUDESOURCE = false
 
 	// includeStackTraces determines whether to include stack traces in logs
-	includeStackTraces = false
+	INCLUDESTACKTRACES = false
 
 	// logLevel is the minimum log level that will be output
-	logLevel = slog.LevelInfo
+	LOGLEVEL = slog.LevelInfo
 
 	// useJSONFormat determines whether to output logs in JSON format
-	useJSONFormat = false
+	USEJSONFORMAT = false
 
 	// jsonPretty determines whether JSON output should be pretty-printed
-	jsonPretty = false
+	JSONPRETTY = false
 
 	// attrOrder defines the default attribute order for structured log entries
 	attrOrder = []string{"time", "level", "msg", "source"}
 
 	// colorEnabled determines whether to use colored output in console logs
-	colorEnabled = true
+	COLORENABLED = true
 
 	// fileWriters tracks all lumberjack loggers for proper closing
-	fileWriters []*lumberjack.Logger
+	FILEWRITERS []*lumberjack.Logger
 )
 
 // osExit is a variable that points to os.Exit to allow for testing
@@ -96,93 +97,116 @@ const (
 	LevelFatal slog.Level = slog.LevelError + 1
 )
 
+// loggerContext holds all the configuration for a specific logger instance
+type loggerContext struct {
+	outputs            []io.Writer
+	consoleOn          bool
+	useJSONFormat      bool
+	jsonPretty         bool
+	includeSource      bool
+	includeStackTraces bool
+	logLevel           slog.Level
+	colorEnabled       bool
+	fileWriters        []*lumberjack.Logger
+	customHandler      slog.Handler
+}
+
 // LoggerOption is a functional option type for configuring the logger.
 // This allows for a flexible and extensible way to configure the logger
 // with various options.
-type LoggerOption func()
+type LoggerOption func(*loggerContext)
 
 // Logger is the main logging structure that wraps slog.Logger.
 // It provides structured logging capabilities with additional
 // convenience methods for different log levels.
 type Logger struct {
 	*slog.Logger
+	ctx *loggerContext // Contains all configuration including file writers
 }
 
-// Init initializes the logger with the given options.
-// It sets up outputs, formats, and handlers based on the provided options.
-// If no options are provided, it defaults to console output in text format.
-//
-// Options can be combined to customize the logger behavior:
-//
-//	logger.Init(
-//		logger.SetLevel(slog.LevelDebug),
-//		logger.EnableTrace(),
-//		logger.AddSource(),
-//		logger.AddFileOutput("/var/log/app.log", 10, 3, 30, true),
-//	)
-//
-// Parameters:
-//   - opts: A variadic list of LoggerOption functions to configure the logger
-//
-// Returns:
-//   - None
+// Init initializes the global default logger with the given options.
+// This configures a single global logger instance used by L().
+// To create independent loggers with their own configurations, use NewLogger() instead.
 func Init(opts ...LoggerOption) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	// Reset the logger state
-	outputs = nil
+	// Create a new logger with the provided options
+	logger = NewLogger(opts...)
+}
 
-	// Reset to default values before applying options
-	logLevel = slog.LevelInfo // Default to INFO
-	useJSONFormat = false
-	jsonPretty = false
-	includeSource = false
-	includeStackTraces = false
-	consoleOn = true
-	colorEnabled = true
-
-	// Process options
-	for _, opt := range opts {
-		opt()
+// NewLogger creates a new independent logger instance with its own configuration.
+// Unlike Init() which configures a global singleton logger, NewLogger returns a
+// completely separate logger that can be configured differently from other loggers.
+func NewLogger(opts ...LoggerOption) *Logger {
+	// Create a configuration context for this specific logger
+	ctx := &loggerContext{
+		outputs:            OUTPUTS,
+		consoleOn:          CONSOLEON,
+		useJSONFormat:      USEJSONFORMAT,
+		jsonPretty:         JSONPRETTY,
+		includeSource:      INCLUDESOURCE,
+		includeStackTraces: INCLUDESTACKTRACES,
+		logLevel:           LOGLEVEL,
+		colorEnabled:       COLORENABLED,
+		fileWriters:        nil,
 	}
 
-	// If no outputs are specified, default to console output unless disabled manually
-	if consoleOn {
-		if !useJSONFormat {
-			// Only use styled writer for text format
-			outputs = append(outputs, NewStyledConsoleWriter(os.Stdout))
-		} else {
-			// For JSON, use stdout directly
-			outputs = append(outputs, os.Stdout)
+	// Apply all options to this context
+	for _, opt := range opts {
+		opt(ctx)
+	}
+
+	// If a custom handler was specified, use it directly
+	if ctx.customHandler != nil {
+		return &Logger{
+			Logger: slog.New(ctx.customHandler),
+			ctx:    ctx,
 		}
 	}
 
-	// If no outputs are specified, default to console output
-	handlerOptions := &slog.HandlerOptions{
-		Level:     logLevel,
-		AddSource: includeSource,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+	// If no outputs are specified, default to console output unless disabled manually
+	if ctx.consoleOn && len(ctx.outputs) == 0 {
+		if !ctx.useJSONFormat {
+			// Only use styled writer for text format
+			ctx.outputs = append(ctx.outputs, NewStyledConsoleWriter(os.Stdout, ctx))
+		} else {
+			// For JSON, use stdout directly
+			ctx.outputs = append(ctx.outputs, os.Stdout)
+		}
+	}
 
+	// Configure handler options
+	handlerOptions := &slog.HandlerOptions{
+		Level:     ctx.logLevel,
+		AddSource: ctx.includeSource,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			// Handle attribute replacements if needed
 			return a
 		},
 	}
 
-	// Create the handler directly without wrapping
-	multiwriter := io.MultiWriter(outputs...)
+	// Create the handler
 	var handler slog.Handler
+	if len(ctx.outputs) > 0 {
+		multiwriter := io.MultiWriter(ctx.outputs...)
 
-	// Choose the appropriate handler based on format
-	if useJSONFormat {
-		// Use JSON format
-		handler = NewJSONHandler(multiwriter, handlerOptions, jsonPretty)
+		// Choose handler based on format
+		if ctx.useJSONFormat {
+			handler = NewJSONHandler(multiwriter, handlerOptions, ctx.jsonPretty)
+		} else {
+			handler = NewCustomTextHandler(multiwriter, handlerOptions)
+		}
 	} else {
-		// Use text format
-		handler = NewCustomTextHandler(multiwriter, handlerOptions)
+		// Fallback to a no-op handler if no outputs
+		handler = slog.NewTextHandler(io.Discard, handlerOptions)
 	}
 
-	// Create the logger
-	logger = &Logger{slog.New(handler)}
+	// Create and return the logger
+	return &Logger{
+		Logger: slog.New(handler),
+		ctx:    ctx, // Store the context with file writers
+	}
 }
 
 // SetLevel sets the minimum log level that will be logged.
@@ -194,8 +218,8 @@ func Init(opts ...LoggerOption) {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to configure the logger
 func SetLevel(level slog.Level) LoggerOption {
-	return func() {
-		logLevel = level
+	return func(ctx *loggerContext) {
+		ctx.logLevel = level
 	}
 }
 
@@ -206,8 +230,8 @@ func SetLevel(level slog.Level) LoggerOption {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to disable colored output
 func DisableColors() LoggerOption {
-	return func() {
-		colorEnabled = false
+	return func(ctx *loggerContext) {
+		ctx.colorEnabled = false
 	}
 }
 
@@ -217,8 +241,8 @@ func DisableColors() LoggerOption {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to set the trace log level
 func EnableLogLevelTrace() LoggerOption {
-	return func() {
-		logLevel = LevelTrace
+	return func(ctx *loggerContext) {
+		ctx.logLevel = LevelTrace
 	}
 }
 
@@ -229,8 +253,8 @@ func EnableLogLevelTrace() LoggerOption {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to enable stack traces
 func EnableStackTraces() LoggerOption {
-	return func() {
-		includeStackTraces = true
+	return func(ctx *loggerContext) {
+		ctx.includeStackTraces = true
 	}
 }
 
@@ -243,9 +267,9 @@ func EnableStackTraces() LoggerOption {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to use JSON formatting
 func UseJSON(pretty bool) LoggerOption {
-	return func() {
-		useJSONFormat = true
-		jsonPretty = pretty
+	return func(ctx *loggerContext) {
+		ctx.useJSONFormat = true
+		ctx.jsonPretty = pretty
 	}
 }
 
@@ -255,8 +279,8 @@ func UseJSON(pretty bool) LoggerOption {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to include source information
 func AddSource() LoggerOption {
-	return func() {
-		includeSource = true
+	return func(ctx *loggerContext) {
+		ctx.includeSource = true
 	}
 }
 
@@ -267,10 +291,21 @@ func AddSource() LoggerOption {
 //   - h: A custom slog.Handler implementation
 //
 // Returns:
-//   - LoggerOption: A function that can be passed to Init() to use a custom handler
+//   - LoggerOption: A function that can be passed to Init() or NewLogger() to use a custom handler
 func UseCustomHandler(h slog.Handler) LoggerOption {
-	return func() {
-		logger = &Logger{slog.New(h)}
+	return func(ctx *loggerContext) {
+		// When used with NewLogger, just set the custom handler in the context
+		if ctx != nil {
+			ctx.customHandler = h
+		} else {
+			// For backward compatibility with direct calls
+			mu.Lock()
+			defer mu.Unlock()
+			logger = &Logger{
+				Logger: slog.New(h),
+				ctx:    &loggerContext{},
+			}
+		}
 	}
 }
 
@@ -281,8 +316,8 @@ func UseCustomHandler(h slog.Handler) LoggerOption {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to disable console output
 func DisableConsole() LoggerOption {
-	return func() {
-		consoleOn = false
+	return func(ctx *loggerContext) {
+		ctx.consoleOn = false
 	}
 }
 
@@ -299,11 +334,35 @@ func DisableConsole() LoggerOption {
 //
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to add file output
-func AddFileOutput(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool) LoggerOption {
-	return func() {
-		w := NewLumberjackWriter(filepath, maxSizeMB, maxBackups, maxAgeDays, compress)
-		fileWriters = append(fileWriters, w)
-		outputs = append(outputs, w)
+func AddFileOutput(filename string, maxSize, maxBackups, maxAge int, compress bool) LoggerOption {
+	return func(ctx *loggerContext) {
+		// Ensure directory exists
+		dir := filepath.Dir(filename)
+		if dir != "" && dir != "." {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				fmt.Fprintf(os.Stderr, "Error creating log directory: %v\n", err)
+				return
+			}
+		}
+
+		fileWriter := &lumberjack.Logger{
+			Filename:   filename,
+			MaxSize:    maxSize,
+			MaxBackups: maxBackups,
+			MaxAge:     maxAge,
+			Compress:   compress,
+		}
+
+		// Test that the file can be created
+		if f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+			f.Close()
+		} else {
+			fmt.Fprintf(os.Stderr, "Error testing log file creation: %v\n", err)
+			return
+		}
+
+		ctx.outputs = append(ctx.outputs, fileWriter)
+		ctx.fileWriters = append(ctx.fileWriters, fileWriter)
 	}
 }
 
@@ -317,17 +376,39 @@ func Close() error {
 	mu.Lock()
 	defer mu.Unlock()
 
+	if logger == nil {
+		return nil
+	}
+
+	// Use the logger.ctx to access file writers
+	return logger.Close()
+}
+
+// Close properly closes all resources used by this logger instance
+func (l *Logger) Close() error {
+	if l == nil || l.ctx == nil {
+		return nil
+	}
+
 	var lastErr error
 
-	// Close each file writer
-	for _, fw := range fileWriters {
-		if err := fw.Close(); err != nil {
-			lastErr = err
+	// Close all file writers
+	for _, fw := range l.ctx.fileWriters {
+		if fw != nil {
+			if err := fw.Close(); err != nil {
+				lastErr = err
+			}
 		}
 	}
 
-	// Clear the writers list
-	fileWriters = nil
+	// Also sync any other writers that might implement Sync()
+	for _, out := range l.ctx.outputs {
+		if syncer, ok := out.(interface{ Sync() error }); ok {
+			if err := syncer.Sync(); err != nil && lastErr == nil {
+				lastErr = err
+			}
+		}
+	}
 
 	return lastErr
 }
@@ -341,8 +422,8 @@ func Close() error {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to add channel output
 func AddChannelOutput(ch chan string) LoggerOption {
-	return func() {
-		outputs = append(outputs, NewChannelWriter(ch))
+	return func(ctx *loggerContext) {
+		ctx.outputs = append(ctx.outputs, NewChannelWriter(ch))
 	}
 }
 
@@ -407,6 +488,11 @@ func (l *Logger) Trace(msg string, attrs ...any) {
 // Returns:
 //   - None: This function does not return as it calls os.Exit(1)
 func (l *Logger) Fatal(msg string, attrs ...any) {
+	if !l.Enabled(context.Background(), LevelFatal) {
+		osExit(1) // Still exit even if logging is disabled
+		return
+	}
+
 	pc, file, line, _ := runtime.Caller(1)
 	fn := runtime.FuncForPC(pc).Name()
 
@@ -423,7 +509,18 @@ func (l *Logger) Fatal(msg string, attrs ...any) {
 		slog.String("source", fmt.Sprintf("%s:%d (%s)", file, line, fn)),
 	}
 
-	if includeStackTraces {
+	// Check if this specific logger has stack traces enabled
+	includeStackTracesForThisLogger := false
+	if l.ctx != nil {
+		includeStackTracesForThisLogger = l.ctx.includeStackTraces
+	} else {
+		// Fall back to global setting for backward compatibility
+		mu.RLock()
+		includeStackTracesForThisLogger = INCLUDESTACKTRACES
+		mu.RUnlock()
+	}
+
+	if includeStackTracesForThisLogger {
 		custom = append(custom, slog.String("trace", string(debug.Stack())))
 	}
 
@@ -492,8 +589,8 @@ func timeNow() time.Time {
 // Returns:
 //   - LoggerOption: A function that can be passed to Init() to set a test file handler
 func SetFileHandlerForTesting(w io.Writer) LoggerOption {
-	return func() {
+	return func(ctx *loggerContext) {
 		// Add the provided writer as a file output
-		outputs = append(outputs, w)
+		ctx.outputs = append(ctx.outputs, w)
 	}
 }

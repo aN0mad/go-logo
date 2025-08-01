@@ -6,24 +6,24 @@ package logo
 
 import "github.com/aN0mad/lumberjack/v2"
 
-// NewLumberjackWriter creates a new writer that writes to a file with rotation support.
-// It uses the lumberjack library to provide log rotation capabilities.
+// NewLumberjackWriter creates a new log writer with rotation capabilities.
+// It configures a lumberjack logger with the specified parameters for log rotation.
 //
 // Parameters:
-//   - filepath: The path to the log file
-//   - maxSizeMB: Maximum size of the log file in megabytes before rotation
+//   - filename: Path to the log file
+//   - maxSize: Maximum size of log files in megabytes before rotation
 //   - maxBackups: Maximum number of old log files to retain
-//   - maxAgeDays: Maximum number of days to retain old log files
-//   - compress: If true, rotated log files will be compressed using gzip
+//   - maxAge: Maximum number of days to retain old log files
+//   - compress: Whether to compress rotated log files
 //
 // Returns:
-//   - *lumberjack.Logger: A configured lumberjack logger that implements io.Writer
-func NewLumberjackWriter(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool) *lumberjack.Logger {
+//   - *lumberjack.Logger: Configured log writer with rotation support
+func NewLumberjackWriter(filename string, maxSize, maxBackups, maxAge int, compress bool) *lumberjack.Logger {
 	return &lumberjack.Logger{
-		Filename:   filepath,
-		MaxSize:    maxSizeMB,
+		Filename:   filename,
+		MaxSize:    maxSize,
 		MaxBackups: maxBackups,
-		MaxAge:     maxAgeDays,
+		MaxAge:     maxAge,
 		Compress:   compress,
 	}
 }

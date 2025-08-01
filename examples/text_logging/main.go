@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	logLocation = "./logs/text_example.log"
+	logLocation = "./logs/text_logging_example.log"
 )
 
 func main() {

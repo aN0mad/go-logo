@@ -8,12 +8,23 @@ import (
 	"testing"
 )
 
+// TestNewStyledConsoleWriter tests the creation of StyledConsoleWriter instances.
+// It verifies the writer is properly initialized with provided parameters.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestNewStyledConsoleWriter(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
 
 	var buf bytes.Buffer
-	writer := NewStyledConsoleWriter(&buf)
+
+	// Test with context
+	ctx := &loggerContext{
+		colorEnabled: true,
+	}
+
+	writer := NewStyledConsoleWriter(&buf, ctx)
 
 	if writer == nil {
 		t.Fatal("NewStyledConsoleWriter returned nil")
@@ -22,8 +33,28 @@ func TestNewStyledConsoleWriter(t *testing.T) {
 	if writer.out != &buf {
 		t.Error("StyledConsoleWriter's output writer doesn't match the provided writer")
 	}
+
+	if writer.ctx != ctx {
+		t.Error("StyledConsoleWriter's context doesn't match the provided context")
+	}
+
+	// Test with nil context (should fall back to global defaults)
+	writer = NewDefaultStyledConsoleWriter(&buf)
+
+	if writer == nil {
+		t.Fatal("NewDefaultStyledConsoleWriter returned nil")
+	}
+
+	if writer.ctx != nil {
+		t.Error("NewDefaultStyledConsoleWriter should set ctx to nil")
+	}
 }
 
+// TestDetectLevel tests the level detection from log messages.
+// It verifies that the function correctly identifies log levels from various message formats.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestDetectLevel(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -85,6 +116,11 @@ func TestDetectLevel(t *testing.T) {
 	}
 }
 
+// TestExtractSource tests the extraction of source information from log messages.
+// It verifies that source file and line information is correctly extracted from different message formats.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestExtractSource(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -131,6 +167,11 @@ func TestExtractSource(t *testing.T) {
 	}
 }
 
+// TestRemoveSourceFromMessage tests the removal of source information from log messages.
+// It verifies that source information is correctly removed while preserving the rest of the message.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestRemoveSourceFromMessage(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -176,19 +217,22 @@ func TestRemoveSourceFromMessage(t *testing.T) {
 	}
 }
 
+// TestStyledConsoleWriter_Write tests the Write method of StyledConsoleWriter.
+// It verifies that log messages are properly formatted and colored based on their level and configuration.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestStyledConsoleWriter_Write(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
 
 	// Test with colors enabled
 	t.Run("with colors", func(t *testing.T) {
-		// Save the original colorEnabled value and restore it after the test
-		originalColorEnabled := colorEnabled
-		colorEnabled = true
-		defer func() { colorEnabled = originalColorEnabled }()
-
 		var buf bytes.Buffer
-		writer := NewStyledConsoleWriter(&buf)
+		ctx := &loggerContext{
+			colorEnabled: true,
+		}
+		writer := NewStyledConsoleWriter(&buf, ctx)
 
 		// Test different log levels
 		logLevels := []string{"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"}
@@ -228,13 +272,11 @@ func TestStyledConsoleWriter_Write(t *testing.T) {
 
 	// Test with colors disabled
 	t.Run("without colors", func(t *testing.T) {
-		// Save the original colorEnabled value and restore it after the test
-		originalColorEnabled := colorEnabled
-		colorEnabled = false
-		defer func() { colorEnabled = originalColorEnabled }()
-
 		var buf bytes.Buffer
-		writer := NewStyledConsoleWriter(&buf)
+		ctx := &loggerContext{
+			colorEnabled: false,
+		}
+		writer := NewStyledConsoleWriter(&buf, ctx)
 
 		message := "time=2023-07-29T12:00:00Z level=INFO msg=test message"
 		_, err := writer.Write([]byte(message))
@@ -262,7 +304,10 @@ func TestStyledConsoleWriter_Write(t *testing.T) {
 	// Test with source information
 	t.Run("with source information", func(t *testing.T) {
 		var buf bytes.Buffer
-		writer := NewStyledConsoleWriter(&buf)
+		ctx := &loggerContext{
+			colorEnabled: true,
+		}
+		writer := NewStyledConsoleWriter(&buf, ctx)
 
 		message := "time=2023-07-29T12:00:00Z level=INFO msg=test message source=file.go:42"
 		_, err := writer.Write([]byte(message))
@@ -275,6 +320,32 @@ func TestStyledConsoleWriter_Write(t *testing.T) {
 
 		if !strings.Contains(output, "file.go:42") {
 			t.Error("Output doesn't contain the source information")
+		}
+	})
+
+	// Test with nil context (falling back to global settings)
+	t.Run("with nil context", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		// Save the original COLORENABLED value and restore it after the test
+		originalColorEnabled := COLORENABLED
+		COLORENABLED = false
+		defer func() { COLORENABLED = originalColorEnabled }()
+
+		writer := NewDefaultStyledConsoleWriter(&buf)
+
+		message := "time=2023-07-29T12:00:00Z level=INFO msg=test message"
+		_, err := writer.Write([]byte(message))
+
+		if err != nil {
+			t.Errorf("Write() returned error: %v", err)
+		}
+
+		output := buf.String()
+
+		// Should use the global setting (COLORENABLED = false)
+		if strings.Contains(output, "\x1b[") {
+			t.Error("Output contains ANSI color codes when global COLORENABLED is false")
 		}
 	})
 }
@@ -307,7 +378,13 @@ func TestContextWithCaller(t *testing.T) {
 	}
 }
 
-// Add this function to strip ANSI codes
+// stripAnsi removes ANSI color codes from strings for easier testing.
+//
+// Parameters:
+//   - str: The string containing ANSI color codes
+//
+// Returns:
+//   - string: The input string with all ANSI color codes removed
 func stripAnsi(str string) string {
 	ansi := regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 	return ansi.ReplaceAllString(str, "")

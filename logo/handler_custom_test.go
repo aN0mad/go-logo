@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+// TestNewCustomTextHandler tests the creation of a CustomTextHandler.
+// It verifies that the handler is properly initialized with the provided parameters.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestNewCustomTextHandler(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -39,6 +44,11 @@ func TestNewCustomTextHandler(t *testing.T) {
 	}
 }
 
+// TestCustomTextHandler_Enabled tests the Enabled method of CustomTextHandler.
+// It verifies that the method correctly determines whether a log level should be processed.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestCustomTextHandler_Enabled(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -92,6 +102,11 @@ func TestCustomTextHandler_Enabled(t *testing.T) {
 	}
 }
 
+// TestCustomTextHandler_Handle tests the Handle method of CustomTextHandler.
+// It verifies that the method correctly formats log records as text.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestCustomTextHandler_Handle(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -163,6 +178,11 @@ func TestCustomTextHandler_Handle(t *testing.T) {
 	}
 }
 
+// TestCustomTextHandler_Handle_WithSource tests the Handle method with source information.
+// It verifies that source information is correctly included in the text output when enabled.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestCustomTextHandler_Handle_WithSource(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -198,6 +218,11 @@ func TestCustomTextHandler_Handle_WithSource(t *testing.T) {
 	}
 }
 
+// TestCustomTextHandler_WithAttrs tests the WithAttrs method of CustomTextHandler.
+// It verifies that the method correctly creates a new handler with the provided attributes.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestCustomTextHandler_WithAttrs(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -232,6 +257,11 @@ func TestCustomTextHandler_WithAttrs(t *testing.T) {
 	}
 }
 
+// TestCustomTextHandler_WithGroup tests the WithGroup method of CustomTextHandler.
+// It verifies that the method correctly creates a new handler with the provided group.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestCustomTextHandler_WithGroup(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -270,6 +300,11 @@ func TestCustomTextHandler_WithGroup(t *testing.T) {
 	}
 }
 
+// TestLevelToString tests the levelToString function.
+// It verifies that the function correctly converts log levels to their string representations.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestLevelToString(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()

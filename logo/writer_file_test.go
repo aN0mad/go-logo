@@ -7,6 +7,11 @@ import (
 	"testing"
 )
 
+// TestNewLumberjackWriter tests the creation and configuration of a LumberjackWriter.
+// It verifies that the writer is properly initialized with the provided parameters.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestNewLumberjackWriter(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -84,6 +89,11 @@ func TestNewLumberjackWriter(t *testing.T) {
 	}
 }
 
+// TestLumberjackWriter_Write tests the Write method of LumberjackWriter.
+// It ensures that data written to the writer is correctly saved to the log file.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestLumberjackWriter_Write(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -130,6 +140,11 @@ func TestLumberjackWriter_Write(t *testing.T) {
 	}
 }
 
+// TestLumberjackWriter_Rotation tests the log rotation functionality of LumberjackWriter.
+// It verifies that log files are properly rotated when they reach their size limit.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestLumberjackWriter_Rotation(t *testing.T) {
 	// Suppress log output for this test
 	defer SuppressLogOutput(t)()
@@ -212,6 +227,11 @@ func TestLumberjackWriter_Rotation(t *testing.T) {
 	}
 }
 
+// TestIntegrationWithLogger tests the integration between the Logger and file output.
+// It ensures that log messages are properly written to the configured log file.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
 func TestIntegrationWithLogger(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir, err := os.MkdirTemp("", "logger-test-*")
