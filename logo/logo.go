@@ -78,6 +78,11 @@ var (
 
 	// fileWriters tracks all lumberjack loggers for proper closing
 	FILEWRITERS []*lumberjack.Logger
+
+	// Predefined log levels for convenience
+	LevelInfo  = slog.LevelInfo
+	LevelDebug = slog.LevelDebug
+	LevelError = slog.LevelError
 )
 
 // osExit is a variable that points to os.Exit to allow for testing
