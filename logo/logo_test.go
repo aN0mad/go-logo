@@ -797,3 +797,129 @@ func TestMultipleLoggers(t *testing.T) {
 		t.Error("Logger1 should still log error messages after level change")
 	}
 }
+
+// TestAddConsoleOutput tests that the AddConsoleOutput function properly enables console output.
+// It verifies that console logging works even when other outputs are configured.
+//
+// Parameters:
+//   - t: The testing instance used for assertions and test control
+func TestAddConsoleOutput(t *testing.T) {
+	// Suppress log output for this test
+	defer SuppressLogOutput(t)()
+
+	// Create a buffer to capture console output
+	var consoleBuf bytes.Buffer
+
+	// Create a channel for channel output
+	ch := make(chan string, 10)
+	defer close(ch)
+
+	// Create a temporary directory for file output
+	tempDir, err := os.MkdirTemp("", "console-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+	logFile := filepath.Join(tempDir, "test.log")
+
+	// Test cases
+	testCases := []struct {
+		name       string
+		logMessage string
+		setup      func() *Logger
+		verify     func(string) bool
+		msg        string
+	}{
+		{
+			name:       "with AddConsoleOutput after file output",
+			logMessage: "Test message after file output",
+			setup: func() *Logger {
+				return NewLogger(
+					AddFileOutput(logFile, 10, 3, 30, false),
+					AddConsoleOutput(),            // Explicitly add console output after file
+					SetConsoleOutput(&consoleBuf), // Redirect console to our buffer
+				)
+			},
+			verify: func(msg string) bool {
+				return strings.Contains(consoleBuf.String(), msg)
+			},
+			msg: "Console output should work when explicitly enabled after file output",
+		},
+		{
+			name:       "with AddConsoleOutput after channel output",
+			logMessage: "Test message after channel output",
+			setup: func() *Logger {
+				consoleBuf.Reset() // Clear buffer from previous case
+				return NewLogger(
+					AddChannelOutput(ch),
+					AddConsoleOutput(),            // Explicitly add console output after channel
+					SetConsoleOutput(&consoleBuf), // Redirect console to our buffer
+				)
+			},
+			verify: func(msg string) bool {
+				return strings.Contains(consoleBuf.String(), msg)
+			},
+			msg: "Console output should work when explicitly enabled after channel output",
+		},
+		{
+			name:       "with AddConsoleOutput and JSON format",
+			logMessage: "Test message and JSON format",
+			setup: func() *Logger {
+				consoleBuf.Reset() // Clear buffer from previous case
+				return NewLogger(
+					UseJSON(false),
+					AddChannelOutput(ch),
+					AddConsoleOutput(),            // Explicitly add console output with JSON
+					SetConsoleOutput(&consoleBuf), // Redirect console to our buffer
+				)
+			},
+			verify: func(msg string) bool {
+				return strings.Contains(consoleBuf.String(), `"msg":"`+msg+`"`)
+			},
+			msg: "Console output should work with JSON format when explicitly enabled",
+		},
+	}
+
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup logger with the test configuration
+			logger := tc.setup()
+
+			// Log a message (using the predefined message for the test case)
+			logger.Info(tc.logMessage)
+
+			// Ensure logs are flushed
+			err := logger.Close()
+			if err != nil {
+				t.Errorf("Failed to close logger: %v", err)
+			}
+
+			// Verify console output was captured correctly
+			if !tc.verify(tc.logMessage) {
+				t.Error(tc.msg)
+				t.Logf("Console buffer content: %q", consoleBuf.String())
+			}
+		})
+	}
+
+	// Test the init global function with AddConsoleOutput
+	t.Run("with global Init function", func(t *testing.T) {
+		consoleBuf.Reset()
+
+		Init(
+			AddChannelOutput(ch),
+			AddConsoleOutput(),
+			SetConsoleOutput(&consoleBuf), // Redirect console to our buffer
+		)
+		defer Close() // Clean up global logger
+
+		testMessage := "Global logger test message"
+		L().Info(testMessage)
+
+		if !strings.Contains(consoleBuf.String(), testMessage) {
+			t.Error("Global logger should output to console when AddConsoleOutput is used")
+			t.Logf("Console buffer content: %q", consoleBuf.String())
+		}
+	})
+}
