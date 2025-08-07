@@ -73,7 +73,7 @@ This file contains the file writer implementation which supports log rotation th
 - [func IsLevelEnabled\(level slog.Level, logger \*Logger\) bool](<#IsLevelEnabled>)
 - [func NewCustomTextHandler\(out io.Writer, opts \*slog.HandlerOptions\) slog.Handler](<#NewCustomTextHandler>)
 - [func NewJSONHandler\(out io.Writer, opts \*slog.HandlerOptions, pretty bool\) slog.Handler](<#NewJSONHandler>)
-- [func NewLumberjackWriter\(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool\) \*lumberjack.Logger](<#NewLumberjackWriter>)
+- [func NewLumberjackWriter\(filename string, maxSize, maxBackups, maxAge int, compress bool\) \*lumberjack.Logger](<#NewLumberjackWriter>)
 - [func SetGlobalLevel\(level slog.Level\)](<#SetGlobalLevel>)
 - [func SetLoggerLevel\(logger \*Logger, level slog.Level\)](<#SetLoggerLevel>)
 - [type ChannelWriter](<#ChannelWriter>)
@@ -97,6 +97,7 @@ This file contains the file writer implementation which supports log rotation th
   - [func \(l \*Logger\) Trace\(msg string, attrs ...any\)](<#Logger.Trace>)
 - [type LoggerOption](<#LoggerOption>)
   - [func AddChannelOutput\(ch chan string\) LoggerOption](<#AddChannelOutput>)
+  - [func AddConsoleOutput\(\) LoggerOption](<#AddConsoleOutput>)
   - [func AddFileOutput\(filename string, maxSize, maxBackups, maxAge int, compress bool\) LoggerOption](<#AddFileOutput>)
   - [func AddSource\(\) LoggerOption](<#AddSource>)
   - [func DisableColors\(\) LoggerOption](<#DisableColors>)
@@ -161,6 +162,11 @@ var (
 
     // fileWriters tracks all lumberjack loggers for proper closing
     FILEWRITERS []*lumberjack.Logger
+
+    // Predefined log levels for convenience
+    LevelInfo  = slog.LevelInfo
+    LevelDebug = slog.LevelDebug
+    LevelError = slog.LevelError
 )
 ```
 
@@ -171,7 +177,7 @@ var Version = "1.0.0"
 ```
 
 <a name="Close"></a>
-## func [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L375>)
+## func [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L413>)
 
 ```go
 func Close() error
@@ -201,7 +207,7 @@ Returns:
 - slog.Level: The current log level
 
 <a name="Init"></a>
-## func [Init](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L130>)
+## func [Init](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L135>)
 
 ```go
 func Init(opts ...LoggerOption)
@@ -268,22 +274,22 @@ Returns:
 ## func [NewLumberjackWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_file.go#L21>)
 
 ```go
-func NewLumberjackWriter(filepath string, maxSizeMB, maxBackups, maxAgeDays int, compress bool) *lumberjack.Logger
+func NewLumberjackWriter(filename string, maxSize, maxBackups, maxAge int, compress bool) *lumberjack.Logger
 ```
 
-NewLumberjackWriter creates a new writer that writes to a file with rotation support. It uses the lumberjack library to provide log rotation capabilities.
+NewLumberjackWriter creates a new log writer with rotation capabilities. It configures a lumberjack logger with the specified parameters for log rotation.
 
 Parameters:
 
-- filepath: The path to the log file
-- maxSizeMB: Maximum size of the log file in megabytes before rotation
+- filename: Path to the log file
+- maxSize: Maximum size of log files in megabytes before rotation
 - maxBackups: Maximum number of old log files to retain
-- maxAgeDays: Maximum number of days to retain old log files
-- compress: If true, rotated log files will be compressed using gzip
+- maxAge: Maximum number of days to retain old log files
+- compress: Whether to compress rotated log files
 
 Returns:
 
-- \*lumberjack.Logger: A configured lumberjack logger that implements io.Writer
+- \*lumberjack.Logger: Configured log writer with rotation support
 
 <a name="SetGlobalLevel"></a>
 ## func [SetGlobalLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/levels.go#L60>)
@@ -521,7 +527,7 @@ Returns:
 - slog.Handler: A handler that adds the group name to the attribute key path
 
 <a name="Logger"></a>
-## type [Logger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L122-L125>)
+## type [Logger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L127-L130>)
 
 Logger is the main logging structure that wraps slog.Logger. It provides structured logging capabilities with additional convenience methods for different log levels.
 
@@ -533,7 +539,7 @@ type Logger struct {
 ```
 
 <a name="L"></a>
-### func [L](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L436>)
+### func [L](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L474>)
 
 ```go
 func L() *Logger
@@ -546,7 +552,7 @@ Returns:
 - \*Logger: The configured Logger instance
 
 <a name="NewLogger"></a>
-### func [NewLogger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L141>)
+### func [NewLogger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L146>)
 
 ```go
 func NewLogger(opts ...LoggerOption) *Logger
@@ -555,7 +561,7 @@ func NewLogger(opts ...LoggerOption) *Logger
 NewLogger creates a new independent logger instance with its own configuration. Unlike Init\(\) which configures a global singleton logger, NewLogger returns a completely separate logger that can be configured differently from other loggers.
 
 <a name="Logger.Close"></a>
-### func \(\*Logger\) [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L388>)
+### func \(\*Logger\) [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L426>)
 
 ```go
 func (l *Logger) Close() error
@@ -564,7 +570,7 @@ func (l *Logger) Close() error
 Close properly closes all resources used by this logger instance
 
 <a name="Logger.Fatal"></a>
-### func \(\*Logger\) [Fatal](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L490>)
+### func \(\*Logger\) [Fatal](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L528>)
 
 ```go
 func (l *Logger) Fatal(msg string, attrs ...any)
@@ -582,7 +588,7 @@ Returns:
 - None: This function does not return as it calls os.Exit\(1\)
 
 <a name="Logger.Trace"></a>
-### func \(\*Logger\) [Trace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L453>)
+### func \(\*Logger\) [Trace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L491>)
 
 ```go
 func (l *Logger) Trace(msg string, attrs ...any)
@@ -600,7 +606,7 @@ Returns:
 - None
 
 <a name="LoggerOption"></a>
-## type [LoggerOption](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L117>)
+## type [LoggerOption](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L122>)
 
 LoggerOption is a functional option type for configuring the logger. This allows for a flexible and extensible way to configure the logger with various options.
 
@@ -609,7 +615,7 @@ type LoggerOption func(*loggerContext)
 ```
 
 <a name="AddChannelOutput"></a>
-### func [AddChannelOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L424>)
+### func [AddChannelOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L462>)
 
 ```go
 func AddChannelOutput(ch chan string) LoggerOption
@@ -625,8 +631,21 @@ Returns:
 
 - LoggerOption: A function that can be passed to Init\(\) to add channel output
 
+<a name="AddConsoleOutput"></a>
+### func [AddConsoleOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L289>)
+
+```go
+func AddConsoleOutput() LoggerOption
+```
+
+AddConsoleOutput adds console output to the logger. This is useful when you want to explicitly enable console output even when other outputs are configured.
+
+Returns:
+
+- LoggerOption: A function that can be passed to Init\(\) to enable console output
+
 <a name="AddFileOutput"></a>
-### func [AddFileOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L337>)
+### func [AddFileOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L375>)
 
 ```go
 func AddFileOutput(filename string, maxSize, maxBackups, maxAge int, compress bool) LoggerOption
@@ -647,7 +666,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) to add file output
 
 <a name="AddSource"></a>
-### func [AddSource](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L281>)
+### func [AddSource](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L319>)
 
 ```go
 func AddSource() LoggerOption
@@ -660,7 +679,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) to include source information
 
 <a name="DisableColors"></a>
-### func [DisableColors](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L232>)
+### func [DisableColors](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L237>)
 
 ```go
 func DisableColors() LoggerOption
@@ -673,7 +692,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) to disable colored output
 
 <a name="DisableConsole"></a>
-### func [DisableConsole](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L318>)
+### func [DisableConsole](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L356>)
 
 ```go
 func DisableConsole() LoggerOption
@@ -686,7 +705,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) to disable console output
 
 <a name="EnableLogLevelTrace"></a>
-### func [EnableLogLevelTrace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L243>)
+### func [EnableLogLevelTrace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L248>)
 
 ```go
 func EnableLogLevelTrace() LoggerOption
@@ -699,7 +718,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) to set the trace log level
 
 <a name="EnableStackTraces"></a>
-### func [EnableStackTraces](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L255>)
+### func [EnableStackTraces](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L260>)
 
 ```go
 func EnableStackTraces() LoggerOption
@@ -712,7 +731,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) to enable stack traces
 
 <a name="SetFileHandlerForTesting"></a>
-### func [SetFileHandlerForTesting](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L591>)
+### func [SetFileHandlerForTesting](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L629>)
 
 ```go
 func SetFileHandlerForTesting(w io.Writer) LoggerOption
@@ -729,7 +748,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) to set a test file handler
 
 <a name="SetLevel"></a>
-### func [SetLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L220>)
+### func [SetLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L225>)
 
 ```go
 func SetLevel(level slog.Level) LoggerOption
@@ -746,7 +765,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) to configure the logger
 
 <a name="UseCustomHandler"></a>
-### func [UseCustomHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L295>)
+### func [UseCustomHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L333>)
 
 ```go
 func UseCustomHandler(h slog.Handler) LoggerOption
@@ -763,7 +782,7 @@ Returns:
 - LoggerOption: A function that can be passed to Init\(\) or NewLogger\(\) to use a custom handler
 
 <a name="UseJSON"></a>
-### func [UseJSON](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L269>)
+### func [UseJSON](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L274>)
 
 ```go
 func UseJSON(pretty bool) LoggerOption
@@ -791,42 +810,42 @@ type StyledConsoleWriter struct {
 ```
 
 <a name="NewDefaultStyledConsoleWriter"></a>
-### func [NewDefaultStyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L48>)
+### func [NewDefaultStyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L50>)
 
 ```go
 func NewDefaultStyledConsoleWriter(w io.Writer) *StyledConsoleWriter
 ```
 
-NewDefaultStyledConsoleWriter creates a console writer with global default settings.
+NewDefaultStyledConsoleWriter creates a styled console writer with default settings. It creates a writer that uses global configuration rather than a specific context.
 
 Parameters:
 
-- w: The underlying io.Writer where formatted output will be written
+- out: The output writer where log messages will be written
 
 Returns:
 
-- \*StyledConsoleWriter: A new styled console writer using global configuration
+- \*StyledConsoleWriter: A new console writer with default styling configuration
 
 <a name="NewStyledConsoleWriter"></a>
-### func [NewStyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L34>)
+### func [NewStyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L35>)
 
 ```go
 func NewStyledConsoleWriter(w io.Writer, ctx *loggerContext) *StyledConsoleWriter
 ```
 
-NewStyledConsoleWriter creates a new StyledConsoleWriter instance.
+NewStyledConsoleWriter creates a new console writer that applies styling to log output. It applies colors and formatting based on log level and configuration.
 
 Parameters:
 
-- w: The underlying io.Writer where formatted output will be written \(typically os.Stdout\)
-- ctx: The logger context containing configuration options
+- out: The output writer where log messages will be written
+- ctx: Logger context containing configuration options like color settings
 
 Returns:
 
-- \*StyledConsoleWriter: A new styled console writer that implements io.Writer
+- \*StyledConsoleWriter: A new console writer with styling capabilities
 
 <a name="StyledConsoleWriter.Write"></a>
-### func \(\*StyledConsoleWriter\) [Write](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L76>)
+### func \(\*StyledConsoleWriter\) [Write](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L78>)
 
 ```go
 func (cw *StyledConsoleWriter) Write(p []byte) (int, error)
