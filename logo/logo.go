@@ -278,6 +278,39 @@ func UseJSON(pretty bool) LoggerOption {
 	}
 }
 
+// Add this function to the logo package
+
+// AddConsoleOutput adds console output to the logger.
+// This is useful when you want to explicitly enable console output
+// even when other outputs are configured.
+//
+// Returns:
+//   - LoggerOption: A function that can be passed to Init() to enable console output
+func AddConsoleOutput() LoggerOption {
+	return func(ctx *loggerContext) {
+		hasConsoleWriter := false
+		for _, output := range ctx.outputs {
+			if _, ok := output.(*StyledConsoleWriter); ok {
+				hasConsoleWriter = true
+				break
+			}
+			if output == os.Stdout {
+				hasConsoleWriter = true
+				break
+			}
+		}
+
+		if !hasConsoleWriter {
+			if ctx.useJSONFormat {
+				ctx.outputs = append(ctx.outputs, os.Stdout)
+			} else {
+				ctx.outputs = append(ctx.outputs, NewStyledConsoleWriter(os.Stdout, ctx))
+			}
+		}
+		ctx.consoleOn = true
+	}
+}
+
 // AddSource enables adding source file and line information to log messages.
 // This helps with debugging by showing where each log message originated from.
 //
