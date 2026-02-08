@@ -1,0 +1,15 @@
+{"level":"INFO","logger":"default","msg":"application started","ts":"2026-02-06T22:55:56.182402387Z","version":"2.0.0"}
+{"level":"DEBUG","logger":"default","msg":"initialization complete","ts":"2026-02-06T22:55:56.182526122Z"}
+{"item_id":0,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.182536812Z"}
+{"item_id":1,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.182578265Z"}
+{"item_id":2,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.182586335Z"}
+{"item_id":3,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.18259285Z"}
+{"item_id":4,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.18259901Z"}
+{"item_id":5,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.182604876Z"}
+{"item_id":6,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.182610477Z"}
+{"item_id":7,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.182616515Z"}
+{"item_id":8,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.182622321Z"}
+{"item_id":9,"level":"INFO","logger":"default","msg":"processing item","timestamp":1770418556,"ts":"2026-02-06T22:55:56.182628162Z"}
+{"level":"WARN","logger":"default","msg":"approaching memory limit","ts":"2026-02-06T22:55:56.182633831Z","usage_percent":85}
+{"host":"db.example.com","level":"ERROR","logger":"default","msg":"failed to connect","ts":"2026-02-06T22:55:56.182639669Z"}
+{"level":"INFO","logger":"default","msg":"application shutdown","ts":"2026-02-06T22:55:56.182645061Z"}

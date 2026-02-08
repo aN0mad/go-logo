@@ -1,12 +1,14 @@
-# Change these variables as necessary.
-MAIN_PACKAGE_PATH=cmd/main.go
-BINARY_NAME=go-logo
-BIN_DIR=./bin
-VERSION=1.0.0
+# go-logo v2 Makefile
+# This is a library project - no main binary to build
+# Use this Makefile for testing, formatting, and building examples
+
+VERSION=2.0.0
 
 ## help: print this help message
 .PHONY: help
 help:
+	@echo "go-logo v2 - Available commands:"
+	@echo ""
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
 ## tidy: format code and tidy modfile
@@ -15,28 +17,70 @@ tidy:
 	go fmt ./...
 	go mod tidy -v
 
-## build: build the unix version
-.PHONY: build
-build:
-    # Include additional build steps, like TypeScript, SCSS or Tailwind compilation here...
-	go build -ldflags="-s -w -X main.VERSION=${VERSION}" -o=${BIN_DIR}/${BINARY_NAME}.elf ${MAIN_PACKAGE_PATH}
+## test: run all tests
+.PHONY: test
+test:
+	go test -v -race -count=1 ./...
 
-## buildwin: build the windows version
-.PHONY: build
-buildwin:
-    # Include additional build steps, like TypeScript, SCSS or Tailwind compilation here...
-	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.VERSION=${VERSION}" -o=${BIN_DIR}/${BINARY_NAME}.exe ${MAIN_PACKAGE_PATH}
+## test-coverage: run tests with coverage
+.PHONY: test-coverage
+test-coverage:
+	go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: coverage.html"
 
-## all: build all applications for unix and windows
-.PHONY: all
-all:
-	make build
-	make buildwin
+## bench: run benchmarks
+.PHONY: bench
+bench:
+	go test -bench=. -benchmem ./...
 
-## clean: clean the repository
+## lint: run linter (requires golangci-lint)
+.PHONY: lint
+lint:
+	golangci-lint run ./...
+
+## examples: build all examples
+.PHONY: examples
+examples:
+	@echo "Building all examples..."
+	@cd examples/basic && go build -o /dev/null .
+	@cd examples/console_colors && go build -o /dev/null .
+	@cd examples/console_pretty && go build -o /dev/null .
+	@cd examples/dual_output && go build -o /dev/null .
+	@cd examples/file_logging && go build -o /dev/null .
+	@cd examples/file_rotation && go build -o /dev/null .
+	@cd examples/json_logging && go build -o /dev/null .
+	@cd examples/multi_handler && go build -o /dev/null .
+	@cd examples/cli_basic && go build -o /dev/null .
+	@cd examples/cli_full && go build -o /dev/null .
+	@cd examples/cli_profiles && go build -o /dev/null .
+	@cd examples/http_echo && go build -o /dev/null .
+	@cd examples/http_fiber_v2 && go build -o /dev/null .
+	@cd examples/http_fiber_v3 && go build -o /dev/null .
+	@cd examples/http_gin && go build -o /dev/null .
+	@echo "✓ All examples built successfully"
+
+## examples-tidy: tidy all example modules
+.PHONY: examples-tidy
+examples-tidy:
+	@echo "Tidying all example modules..."
+	@for dir in examples/*/; do \
+		if [ -f "$$dir/go.mod" ]; then \
+			echo "  $$dir"; \
+			cd "$$dir" && go mod tidy && cd ../..; \
+		fi \
+	done
+	@echo "✓ All examples tidied"
+
+## clean: clean build artifacts and caches
 .PHONY: clean
 clean:
-	rm -rf ${BIN_DIR}/*
 	go clean -cache
-	go mod tidy -v
-	mv ./logs /tmp/${BINARY_NAME}-logs-$(shell date +%Y%m%d-%H%M%S) || true
+	go clean -testcache
+	rm -f coverage.out coverage.html
+	@echo "✓ Cleaned"
+
+## all: run tidy, test, and build examples
+.PHONY: all
+all: tidy test examples
+	@echo "✓ All tasks completed"

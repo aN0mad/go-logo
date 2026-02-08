@@ -1,222 +1,222 @@
 # go-logo
-A golang logging library that allows logging to the console, to a channel or both.
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/aN0mad/go-logo/v2.svg)](https://pkg.go.dev/github.com/aN0mad/go-logo/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aN0mad/go-logo/v2)](https://goreportcard.com/report/github.com/aN0mad/go-logo/v2)
+
+**go-logo** is a fast, zero-dependency, structured logging library for Go with beautiful console output and production-ready JSON logging.
 
 ## Features
-- Multiple log levels (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
-- Multiple output formats (text, JSON, pretty JSON)
-- Multiple output destinations (console, file, channel)
-- Colorized console output
-- Structured logging with attributes
-- Source code location information
-- File rotation with size and age limits
-- Context-aware logging
-- Channel-based logging for asynchronous processing
 
-## Usage
+- **Zero Dependencies** - No external packages required (except optional file rotation)
+- **Beautiful Console Output** - Color-coded, human-readable logs with smart terminal detection
+- **Structured Logging** - First-class support for structured fields with stable JSON schema
+- **File Rotation** - Built-in log rotation with size and age limits
+- **CLI Configuration** - Configure everything via flags, environment variables, or profiles
+- **Context Integration** - Pass loggers through request contexts seamlessly
+- **HTTP Middleware** - Ready-to-use examples for Fiber, Echo, Gin, and more
+- **Thread-Safe** - Concurrent logging without data races
+- **Type-Safe** - Compile-time safety with clear, idiomatic Go APIs
+
+## Installation
+
 ```bash
-/workspace/bin ./go-logo.elf
-Initialized logger
-[18:56:51] time=2025-07-30T18:56:51.722Z level=DEBUG msg=This is a debug message source=/workspace/cmd/main.go:23
-[18:56:51] time=2025-07-30T18:56:51.722Z level=INFO msg=This is an info message source=/workspace/cmd/main.go:24
-[18:56:51] time=2025-07-30T18:56:51.723Z level=WARN msg=This is a warning message source=/workspace/cmd/main.go:25
-[18:56:51] time=2025-07-30T18:56:51.723Z level=ERROR msg=This is an error message source=/workspace/cmd/main.go:26
-[18:56:51] time=2025-07-30T18:56:51.723Z level=FATAL msg=This is a fatal message - It will exit the program source=/workspace/cmd/main.go:27
+go get github.com/aN0mad/go-logo/v2
 ```
 
-### Colored output
-![Colorful logs](assets/colored_logs.png)
+> **Note:** v1 of go-logo has been moved to the `v1` branch. This is v2 which includes breaking changes and new features. See [migration guide](docs/migration-v1-to-v2.md) for upgrade instructions.
 
-## Example
-Example source code is given in the [examples](examples/) directory.
+## Quick Start
 
-### Logging to console
-```golang
+### Basic Usage
+
+```go
 package main
 
 import (
-	"fmt"
-	"log/slog"
-	logger "github.com/aN0mad/go-logo/logo"
+    "github.com/aN0mad/go-logo/v2"
 )
 
 func main() {
-
-    // Initialize the logger with desired options
-	logger.Init(
-		logger.AddSource(),                                    // Log source caller information
-        logger.SetLevel(slog.LevelDebug),                      // Set minimum log level
-        logger.AddFileOutput("logs/app.log", 10, 3, 30, true), // Log to file with rotation
-	)
-
-    defer logger.Close() // Ensure all file writers are closed properly
-
-    // Get the logger instance
-	log := logger.L()
-	fmt.Println("Initialized logger")
-
-    // Log messages at different levels
-	log.Trace("This is a trace message - It will not show up")
-	log.Debug("This is a debug message")
-	log.Info("This is an info message")
-	log.Warn("This is a warning message")
-	log.Error("This is an error message")
-	log.Fatal("This is a fatal message - It will exit the program")
+    // Create a logger with console output
+    log := logo.New(logo.WithConsole())
+    defer log.Close()
+    
+    log.Info("Hello, world!", logo.F("version", "2.0.0"))
+    log.Debug("Debug message", logo.F("count", 42))
+    log.Error("Something went wrong", logo.F("error", "timeout"))
 }
 ```
 
-## Configuration Options
-### Log levels
-```golang
-logger.Init(
-    logger.SetLevel(slog.LevelDebug), // Standard log levels: DEBUG, INFO, WARN, ERROR
-    logger.EnableTrace(),             // Enable TRACE level (below DEBUG)
+### With CLI Configuration
+
+```go
+package main
+
+import (
+    "flag"
+    "github.com/aN0mad/go-logo/v2"
 )
+
+func main() {
+    // Configure via flags and environment variables
+    cfg := logo.NewConfig()
+    cfg.RegisterFlags(nil)
+    flag.Parse()
+    
+    logger, err := cfg.BuildLogger()
+    if err != nil {
+        panic(err)
+    }
+    defer logger.Close()
+    
+    logger.Info("Application started")
+}
 ```
 
-### Output Formats
-```golang
-// Text format (default)
-logger.Init()
-
-// JSON format
-logger.Init(
-    logger.UseJSON(false) // Compact JSON
-)
-
-// Pretty JSON format
-logger.Init(
-    logger.UseJSON(true) // Pretty-printed JSON
-)
-```
-
-### Output Destinations
-```golang
-// Console output (default)
-logger.Init()
-
-// File output with rotation
-logger.Init(
-    logger.AddFileOutput("logs/app.log", 10, 3, 30, true)
-    // Parameters: path, maxSize (MB), backups, maxAge (days), compress
-)
-
-// Channel output
-logger.Init(
-    logger.AddChannelOutput(logChan) // logChan is a chan string
-)
-
-// Multiple outputs
-logger.Init(
-    logger.AddFileOutput("logs/app.log", 10, 3, 30, true),
-    logger.AddChannelOutput(logChan)
-)
-
-// Disable console output when using other outputs
-logger.Init(
-    logger.DisableConsole(),
-    logger.AddFileOutput("logs/app.log", 10, 3, 30, true)
-)
-```
-
-### Additional Features
-```golang
-// Add source file and line information
-logger.Init(
-    logger.AddSource()
-)
-
-// Disable colored output
-logger.Init(
-    logger.DisableColors()
-)
-
-// Use custom handler
-logger.Init(
-    logger.UseCustomHandler(myCustomHandler)
-)
-
-// Context-aware logging
-ctx := context.WithValue(context.Background(), "request_id", "req-123")
-requestLogger := logger.WithContext(ctx)
-requestLogger.Info("Processing request") // Includes request_id automatically
-```
-
-## Building
-The included Makefile makes building and managing the project easy:
-
+Run with different configurations:
 ```bash
-# List available commands
-make help
+# Development mode
+./app -log.level=debug -log.console.format=pretty
 
-# Format code and tidy dependencies
-make tidy
+# Production mode  
+./app -log.profile=prod -log.file.path=app.log
 
-# Build for current platform
-make build
-
-# Build for Windows
-make buildwin
-
-# Build for both platforms
-make all
-
-# Clean build artifacts
-make clean
+# Via environment variables
+LOG_LEVEL=debug LOG_CONSOLE_COLOR=always ./app
 ```
+
+### With File Logging
+
+```go
+log := logo.New(
+    logo.WithConsole(),
+    logo.WithJSONFile("app.log"),
+)
+defer log.Close()
+
+log.Info("Logged to both console and file")
+```
+
+### Context-Aware Logging
+
+```go
+ctx := logo.WithLogger(context.Background(), log)
+ctx = logo.WithRequestID(ctx, "req-123")
+
+// Later in your code
+logger := logo.FromContext(ctx)
+logger.Info("Processing request") // Includes request ID
+```
+
+## Documentation
+
+- **[API Reference](docs/doc.md)** - Complete API documentation
+- **[Configuration Guide](docs/configuration.md)** - CLI flags, environment variables, and profiles
+- **[HTTP Integration](docs/http.md)** - Middleware examples for web frameworks
+- **[Architecture Overview](docs/architecture.md)** - Design principles and patterns
+- **[Schema Reference](docs/schema.md)** - JSON logging schema specification
+- **[File Rotation](docs/rotation.md)** - Log rotation configuration
+- **[Migration from v1](docs/migration-v1-to-v2.md)** - Upgrade guide
+- **[Changelog](CHANGELOG.md)** - Version history and release notes
 
 ## Examples
-Check the examples directory for more detailed examples:
 
-- Text logging
-- JSON logging
-- Pretty JSON logging
-- File logging without console
-- Channel-based logging
-- Context-aware logging
-- Comprehensive logger configuration
+Explore the [examples/](examples/) directory for complete, runnable examples:
 
-### Logging with context
-```golang
-// No WithContext in core library
-// To use with web contexts, extend the logger in your application:
+### Core Examples
+- **[basic](examples/basic/)** - Simple console logging
+- **[console_pretty](examples/console_pretty/)** - Pretty-formatted console output
+- **[console_colors](examples/console_colors/)** - Color mode demonstrations
+- **[json_logging](examples/json_logging/)** - Structured JSON logging
+- **[file_logging](examples/file_logging/)** - File output with rotation
+- **[dual_output](examples/dual_output/)** - Console + file simultaneously
+- **[multi_handler](examples/multi_handler/)** - Custom routing patterns
 
-// In your web app's logger package
-func LoggerFromContext(ctx context.Context) *logo.Logger {
-    logger := logo.L()
-    
-    // Add application-specific context values
-    if requestID, ok := ctx.Value("request_id").(string); ok {
-        logger = logger.With("request_id", requestID)
-    }
-    if userID, ok := ctx.Value("user_id").(string); ok {
-        logger = logger.With("user_id", userID)
-    }
-    
-    return logger
-}
+### CLI Examples
+- **[cli_basic](examples/cli_basic/)** - CLI flag usage
+- **[cli_profiles](examples/cli_profiles/)** - Development and production profiles
+- **[cli_full](examples/cli_full/)** - Comprehensive CLI configuration
+
+### HTTP Framework Examples
+- **[http_fiber_v2](examples/http_fiber_v2/)** - Fiber v2 middleware
+- **[http_fiber_v3](examples/http_fiber_v3/)** - Fiber v3 middleware (beta)
+- **[http_echo](examples/http_echo/)** - Echo framework middleware
+- **[http_gin](examples/http_gin/)** - Gin framework middleware
+
+See [HTTP Examples documentation](docs/HTTP_EXAMPLES.md) for detailed HTTP integration patterns.
+
+## Common Patterns
+
+### Structured Fields
+
+```go
+log.Info("User login",
+    logo.F("user_id", 12345),
+    logo.F("ip", "192.168.1.1"),
+    logo.F("duration_ms", 42),
+)
 ```
 
-## Running Tests
-### Run all unit tests:
+### Child Loggers
+
+```go
+baseLogger := logo.New(logo.WithConsole())
+requestLogger := baseLogger.With(
+    logo.F("request_id", "abc-123"),
+    logo.F("user", "john"),
+)
+
+requestLogger.Info("Processing") // Includes request_id and user
+```
+
+### Multiple Handlers
+
+```go
+consoleHandler := logo.NewConsoleHandler(
+    logo.WithConsoleLevel(logo.LevelInfo),
+)
+
+fileHandler, _ := logo.NewFileHandler("app.log", 
+    logo.NewJSONFormatter(),
+    logo.WithFileLevel(logo.LevelDebug),
+)
+
+router := logo.NewRouter(consoleHandler, fileHandler)
+log := logo.New(logo.WithRouter(router))
+
+log.Debug("Detailed info")  // Only to file
+log.Info("General info")    // To both
+```
+
+## Configuration Profiles
+
+### Development Profile
 ```bash
-go test ./logo/
+./app -log.profile=dev
 ```
+- Debug level logging
+- Pretty console format with colors  
+- Source location tracking enabled
+- Optimized for developer experience
 
-### Check test coverage
+### Production Profile
 ```bash
-go test -v -coverprofile coverage.out
+./app -log.profile=prod -log.file.path=app.log
 ```
+- Info level logging
+- JSON file output with rotation
+- Source location disabled
+- Optimized for performance
 
-#### Generate HTML report
-```bash
-go tool cover -html coverage.out -o coverage.html
-```
+## Contributing
 
-## Enhancements
-- Migrate from [Lumberjack](https://github.com/aN0mad/lumberjack) to [timberjack](https://github.com/DeRuina/timberjack/) for enhanced log file control
+Contributions are welcome! Please feel free to submit issues and pull requests.
 
-## Acknowledgments
-- [natefinch](https://github.com/natefinch) for the [Lumberjack](https://github.com/natefinch/lumberjack) package to handle log files and rotations
-- [charmbracelet](https://github.com/charmbracelet) for the [lipgloss](https://github.com/charmbracelet/lipgloss) package for ANSI coloring
-- Docs generated with [gomarkdoc](https://github.com/princjef/gomarkdoc) using `/go/bin/gomarkdoc . > doc.md` within the module directory (`./logo`)
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Version History
+
+- **v2.0.0** - Major rewrite with zero dependencies, improved API, and production features
+- **v1.x** - Legacy version (available on `v1` branch)

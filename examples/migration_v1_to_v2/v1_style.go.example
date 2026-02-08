@@ -1,0 +1,71 @@
+package main
+
+// This file shows typical v1 usage patterns.
+// It's named .go.example so it won't interfere with compilation.
+
+import (
+	"log/slog"
+	"time"
+
+	logger "github.com/aN0mad/go-logo/logo"
+)
+
+func main() {
+	// v1: Global singleton initialization
+	logger.Init(
+		logger.SetLevel(slog.LevelDebug),
+		logger.AddSource(),
+		logger.UseJSON(false),
+		logger.AddFileOutput("logs/app.log", 10, 3, 30, true),
+	)
+	defer logger.Close()
+
+	// v1: Get global logger instance
+	log := logger.L()
+
+	// v1: Basic logging
+	log.Info("Application started")
+
+	// v1: Structured logging with key-value pairs
+	log.Info("User login",
+		"user_id", 12345,
+		"username", "johndoe",
+		"ip_address", "192.168.1.100",
+		"timestamp", time.Now(),
+	)
+
+	// v1: Different log levels
+	log.Trace("Trace level - very detailed")
+	log.Debug("Debug level - development info")
+	log.Info("Info level - general information")
+	log.Warn("Warn level - warning condition")
+	log.Error("Error level - error occurred")
+	// log.Fatal("Fatal level - critical error") // Would exit
+
+	// v1: Complex structured data
+	log.Info("System metrics",
+		"cpu", map[string]interface{}{
+			"usage": 45.2,
+			"temp": 62,
+		},
+		"memory", map[string]interface{}{
+			"used": 4096,
+			"total": 8192,
+		},
+	)
+
+	// v1: Error with context
+	err := processOrder(12345)
+	if err != nil {
+		log.Error("Order processing failed",
+			"order_id", 12345,
+			"error", err.Error(),
+			"retry_count", 3,
+		)
+	}
+}
+
+func processOrder(orderID int) error {
+	// Simulate processing
+	return nil
+}

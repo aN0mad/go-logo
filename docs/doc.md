@@ -3,863 +3,1303 @@
 # logo
 
 ```go
-import "github.com/aN0mad/go-logo/logo"
+import "github.com/aN0mad/go-logo/v2"
 ```
-
-Package logo provides functionality for structured logging.
-
-This file contains the custom text handler implementation which formats log messages in a human\-readable text format with ordered attributes.
-
-Package logo provides functionality for structured logging.
-
-This file contains the JSON handler implementation which formats log messages as JSON objects, with optional pretty\-printing.
-
-Package logo provides functionality for structured logging.
-
-This file contains functions to query and manipulate the current log level in the logger configuration.
-
-Package logo provides a flexible and extensible structured logging framework built on top of Go's standard library slog package. It enhances slog with features like customizable outputs, log levels including TRACE and FATAL, colorized console output, file rotation, log channels, and support for JSON formatting.
-
-This package supports multiple logging backends simultaneously, including console, files \(with rotation via lumberjack\), and channels for custom processing.
-
-Basic usage:
-
-```
-logo.Init(
-	logo.SetLevel(slog.LevelInfo),
-	logo.EnableTrace(),
-	logo.AddSource(),
-)
-
-log := logo.L()
-log.Info("Hello, world!", "user", "gopher")
-```
-
-For file logging with rotation:
-
-```
-logo.Init(
-	logo.AddFileOutput("/path/to/log.file", 10, 3, 30, true),
-)
-```
-
-For JSON output:
-
-```
-logo.Init(
-	logo.UseJSON(true), // true for pretty-printed JSON
-)
-```
-
-Package logo provides functionality for structured logging.
-
-This file contains the channel writer implementation which allows log messages to be sent to a Go channel for asynchronous processing.
-
-Package logo provides functionality for structured logging.
-
-This file contains the console writer implementation with support for colorized and styled output to make log messages more readable in terminal environments.
-
-Package logo provides functionality for structured logging.
-
-This file contains the file writer implementation which supports log rotation through the lumberjack package.
 
 ## Index
 
 - [Constants](<#constants>)
 - [Variables](<#variables>)
-- [func Close\(\) error](<#Close>)
-- [func GetCurrentLevel\(logger \*Logger\) slog.Level](<#GetCurrentLevel>)
-- [func Init\(opts ...LoggerOption\)](<#Init>)
-- [func IsLevelEnabled\(level slog.Level, logger \*Logger\) bool](<#IsLevelEnabled>)
-- [func NewCustomTextHandler\(out io.Writer, opts \*slog.HandlerOptions\) slog.Handler](<#NewCustomTextHandler>)
-- [func NewJSONHandler\(out io.Writer, opts \*slog.HandlerOptions, pretty bool\) slog.Handler](<#NewJSONHandler>)
-- [func NewLumberjackWriter\(filename string, maxSize, maxBackups, maxAge int, compress bool\) \*lumberjack.Logger](<#NewLumberjackWriter>)
-- [func SetGlobalLevel\(level slog.Level\)](<#SetGlobalLevel>)
-- [func SetLoggerLevel\(logger \*Logger, level slog.Level\)](<#SetLoggerLevel>)
-- [type ChannelWriter](<#ChannelWriter>)
-  - [func NewChannelWriter\(ch chan string\) \*ChannelWriter](<#NewChannelWriter>)
-  - [func \(cw \*ChannelWriter\) Write\(p \[\]byte\) \(int, error\)](<#ChannelWriter.Write>)
-- [type CustomTextHandler](<#CustomTextHandler>)
-  - [func \(h \*CustomTextHandler\) Enabled\(ctx context.Context, level slog.Level\) bool](<#CustomTextHandler.Enabled>)
-  - [func \(h \*CustomTextHandler\) Handle\(ctx context.Context, r slog.Record\) error](<#CustomTextHandler.Handle>)
-  - [func \(h \*CustomTextHandler\) WithAttrs\(attrs \[\]slog.Attr\) slog.Handler](<#CustomTextHandler.WithAttrs>)
-  - [func \(h \*CustomTextHandler\) WithGroup\(name string\) slog.Handler](<#CustomTextHandler.WithGroup>)
+- [func FilterReservedKeys\(fields map\[string\]interface\{\}\) map\[string\]interface\{\}](<#FilterReservedKeys>)
+- [func GenerateRequestID\(\) string](<#GenerateRequestID>)
+- [func IsReservedKey\(key string\) bool](<#IsReservedKey>)
+- [func LevelColor\(level Level\) string](<#LevelColor>)
+- [func LevelColorBold\(level Level\) string](<#LevelColorBold>)
+- [func OpenFile\(path string, perm os.FileMode\) \(\*os.File, error\)](<#OpenFile>)
+- [func RequestIDFromContext\(ctx context.Context\) string](<#RequestIDFromContext>)
+- [func SetRequestIDGenerator\(generator RequestIDGenerator\)](<#SetRequestIDGenerator>)
+- [func ValidateFields\(fields map\[string\]interface\{\}\) error](<#ValidateFields>)
+- [func WithLogger\(ctx context.Context, logger \*Logger\) context.Context](<#WithLogger>)
+- [func WithRequestID\(ctx context.Context, requestID string\) context.Context](<#WithRequestID>)
+- [type BaseHandler](<#BaseHandler>)
+  - [func NewBaseHandler\(level Level\) \*BaseHandler](<#NewBaseHandler>)
+  - [func \(h \*BaseHandler\) Close\(\) error](<#BaseHandler.Close>)
+  - [func \(h \*BaseHandler\) Enabled\(level Level\) bool](<#BaseHandler.Enabled>)
+  - [func \(h \*BaseHandler\) Level\(\) Level](<#BaseHandler.Level>)
+- [type Caller](<#Caller>)
+- [type ColorMode](<#ColorMode>)
+- [type ColorSupport](<#ColorSupport>)
+  - [func NewColorSupport\(writer io.Writer, mode ColorMode\) \*ColorSupport](<#NewColorSupport>)
+  - [func \(c \*ColorSupport\) Colorize\(text, color string\) string](<#ColorSupport.Colorize>)
+  - [func \(c \*ColorSupport\) Enabled\(\) bool](<#ColorSupport.Enabled>)
+- [type Config](<#Config>)
+  - [func NewConfig\(\) \*Config](<#NewConfig>)
+  - [func \(c \*Config\) ApplyProfile\(profile string\) error](<#Config.ApplyProfile>)
+  - [func \(c \*Config\) BuildLogger\(\) \(\*Logger, error\)](<#Config.BuildLogger>)
+  - [func \(c \*Config\) LoadFromEnv\(\)](<#Config.LoadFromEnv>)
+  - [func \(c \*Config\) RegisterFlags\(fs \*flag.FlagSet\)](<#Config.RegisterFlags>)
+  - [func \(c \*Config\) Validate\(\) error](<#Config.Validate>)
+- [type ConsoleHandler](<#ConsoleHandler>)
+  - [func NewConsoleHandler\(opts ...ConsoleHandlerOption\) \*ConsoleHandler](<#NewConsoleHandler>)
+  - [func NewConsoleHandlerWithWriter\(writer io.Writer, colorMode ColorMode, level Level\) \*ConsoleHandler](<#NewConsoleHandlerWithWriter>)
+- [type ConsoleHandlerOption](<#ConsoleHandlerOption>)
+  - [func WithConsoleLevel\(level Level\) ConsoleHandlerOption](<#WithConsoleLevel>)
+- [type Entry](<#Entry>)
+  - [func NewEntry\(level Level, message string, logger string, fields map\[string\]interface\{\}\) \*Entry](<#NewEntry>)
+  - [func \(e \*Entry\) Clone\(\) \*Entry](<#Entry.Clone>)
+  - [func \(e \*Entry\) WithCaller\(caller \*Caller\) \*Entry](<#Entry.WithCaller>)
+- [type Field](<#Field>)
+  - [func F\(key string, value interface\{\}\) Field](<#F>)
+- [type FileHandler](<#FileHandler>)
+  - [func NewFileHandler\(path string, formatter Formatter, opts ...FileHandlerOption\) \(\*FileHandler, error\)](<#NewFileHandler>)
+  - [func \(h \*FileHandler\) Close\(\) error](<#FileHandler.Close>)
+  - [func \(h \*FileHandler\) Rotate\(\) error](<#FileHandler.Rotate>)
+- [type FileHandlerOption](<#FileHandlerOption>)
+  - [func WithFileLevel\(level Level\) FileHandlerOption](<#WithFileLevel>)
+  - [func WithRotation\(config \*RotationConfig\) FileHandlerOption](<#WithRotation>)
+- [type Formatter](<#Formatter>)
+- [type Handler](<#Handler>)
+- [type JSONFormatter](<#JSONFormatter>)
+  - [func NewJSONFormatter\(opts ...JSONFormatterOption\) \*JSONFormatter](<#NewJSONFormatter>)
+  - [func \(f \*JSONFormatter\) Format\(entry \*Entry\) \(\[\]byte, error\)](<#JSONFormatter.Format>)
+- [type JSONFormatterOption](<#JSONFormatterOption>)
+  - [func WithJSONSource\(enabled bool\) JSONFormatterOption](<#WithJSONSource>)
+  - [func WithPrettyJSON\(pretty bool\) JSONFormatterOption](<#WithPrettyJSON>)
 - [type JSONHandler](<#JSONHandler>)
-  - [func \(h \*JSONHandler\) Enabled\(ctx context.Context, level slog.Level\) bool](<#JSONHandler.Enabled>)
-  - [func \(h \*JSONHandler\) Handle\(ctx context.Context, r slog.Record\) error](<#JSONHandler.Handle>)
-  - [func \(h \*JSONHandler\) WithAttrs\(attrs \[\]slog.Attr\) slog.Handler](<#JSONHandler.WithAttrs>)
-  - [func \(h \*JSONHandler\) WithGroup\(name string\) slog.Handler](<#JSONHandler.WithGroup>)
+  - [func NewJSONHandler\(writer interface\{\}, level Level, opts ...JSONFormatterOption\) \*JSONHandler](<#NewJSONHandler>)
+- [type Level](<#Level>)
+  - [func ParseLevel\(s string\) Level](<#ParseLevel>)
+  - [func \(l Level\) String\(\) string](<#Level.String>)
 - [type Logger](<#Logger>)
-  - [func L\(\) \*Logger](<#L>)
-  - [func NewLogger\(opts ...LoggerOption\) \*Logger](<#NewLogger>)
+  - [func ContextWithFields\(ctx context.Context, fields ...Field\) \*Logger](<#ContextWithFields>)
+  - [func FromContext\(ctx context.Context\) \*Logger](<#FromContext>)
+  - [func L\(ctx context.Context\) \*Logger](<#L>)
+  - [func New\(opts ...Option\) \*Logger](<#New>)
   - [func \(l \*Logger\) Close\(\) error](<#Logger.Close>)
-  - [func \(l \*Logger\) Fatal\(msg string, attrs ...any\)](<#Logger.Fatal>)
-  - [func \(l \*Logger\) Trace\(msg string, attrs ...any\)](<#Logger.Trace>)
-- [type LoggerOption](<#LoggerOption>)
-  - [func AddChannelOutput\(ch chan string\) LoggerOption](<#AddChannelOutput>)
-  - [func AddConsoleOutput\(\) LoggerOption](<#AddConsoleOutput>)
-  - [func AddFileOutput\(filename string, maxSize, maxBackups, maxAge int, compress bool\) LoggerOption](<#AddFileOutput>)
-  - [func AddSource\(\) LoggerOption](<#AddSource>)
-  - [func DisableColors\(\) LoggerOption](<#DisableColors>)
-  - [func DisableConsole\(\) LoggerOption](<#DisableConsole>)
-  - [func EnableLogLevelTrace\(\) LoggerOption](<#EnableLogLevelTrace>)
-  - [func EnableStackTraces\(\) LoggerOption](<#EnableStackTraces>)
-  - [func SetFileHandlerForTesting\(w io.Writer\) LoggerOption](<#SetFileHandlerForTesting>)
-  - [func SetLevel\(level slog.Level\) LoggerOption](<#SetLevel>)
-  - [func UseCustomHandler\(h slog.Handler\) LoggerOption](<#UseCustomHandler>)
-  - [func UseJSON\(pretty bool\) LoggerOption](<#UseJSON>)
-- [type StyledConsoleWriter](<#StyledConsoleWriter>)
-  - [func NewDefaultStyledConsoleWriter\(w io.Writer\) \*StyledConsoleWriter](<#NewDefaultStyledConsoleWriter>)
-  - [func NewStyledConsoleWriter\(w io.Writer, ctx \*loggerContext\) \*StyledConsoleWriter](<#NewStyledConsoleWriter>)
-  - [func \(cw \*StyledConsoleWriter\) Write\(p \[\]byte\) \(int, error\)](<#StyledConsoleWriter.Write>)
+  - [func \(l \*Logger\) Debug\(msg string, fields ...Field\)](<#Logger.Debug>)
+  - [func \(l \*Logger\) Error\(msg string, fields ...Field\)](<#Logger.Error>)
+  - [func \(l \*Logger\) Fatal\(msg string, fields ...Field\)](<#Logger.Fatal>)
+  - [func \(l \*Logger\) Info\(msg string, fields ...Field\)](<#Logger.Info>)
+  - [func \(l \*Logger\) Trace\(msg string, fields ...Field\)](<#Logger.Trace>)
+  - [func \(l \*Logger\) Warn\(msg string, fields ...Field\)](<#Logger.Warn>)
+  - [func \(l \*Logger\) With\(fields ...Field\) \*Logger](<#Logger.With>)
+  - [func \(l \*Logger\) WithName\(name string\) \*Logger](<#Logger.WithName>)
+- [type Option](<#Option>)
+  - [func WithConsole\(opts ...ConsoleHandlerOption\) Option](<#WithConsole>)
+  - [func WithFields\(fields map\[string\]interface\{\}\) Option](<#WithFields>)
+  - [func WithJSONFile\(path string, opts ...FileHandlerOption\) Option](<#WithJSONFile>)
+  - [func WithName\(name string\) Option](<#WithName>)
+  - [func WithRouter\(router \*Router\) Option](<#WithRouter>)
+  - [func WithSource\(enabled bool\) Option](<#WithSource>)
+- [type PrettyFormatter](<#PrettyFormatter>)
+  - [func NewPrettyFormatter\(colorSupport \*ColorSupport, opts ...PrettyFormatterOption\) \*PrettyFormatter](<#NewPrettyFormatter>)
+  - [func \(f \*PrettyFormatter\) Format\(entry \*Entry\) \(\[\]byte, error\)](<#PrettyFormatter.Format>)
+- [type PrettyFormatterOption](<#PrettyFormatterOption>)
+  - [func WithColorMode\(mode ColorMode\) PrettyFormatterOption](<#WithColorMode>)
+  - [func WithSourceInfo\(enabled bool\) PrettyFormatterOption](<#WithSourceInfo>)
+  - [func WithTimeFormat\(format string\) PrettyFormatterOption](<#WithTimeFormat>)
+- [type RequestIDGenerator](<#RequestIDGenerator>)
+- [type RotationConfig](<#RotationConfig>)
+  - [func DefaultRotationConfig\(\) \*RotationConfig](<#DefaultRotationConfig>)
+- [type Router](<#Router>)
+  - [func NewRouter\(handlers ...Handler\) \*Router](<#NewRouter>)
+  - [func \(r \*Router\) AddHandler\(handler Handler\)](<#Router.AddHandler>)
+  - [func \(r \*Router\) Close\(\) error](<#Router.Close>)
+  - [func \(r \*Router\) Handlers\(\) \[\]Handler](<#Router.Handlers>)
+  - [func \(r \*Router\) Route\(entry \*Entry\)](<#Router.Route>)
+- [type SequentialGenerator](<#SequentialGenerator>)
+  - [func NewSequentialGenerator\(prefix string\) \*SequentialGenerator](<#NewSequentialGenerator>)
+  - [func \(g \*SequentialGenerator\) Generate\(\) string](<#SequentialGenerator.Generate>)
+- [type ShortIDGenerator](<#ShortIDGenerator>)
+  - [func \(g \*ShortIDGenerator\) Generate\(\) string](<#ShortIDGenerator.Generate>)
+- [type TextFormatter](<#TextFormatter>)
+  - [func NewTextFormatter\(\) \*TextFormatter](<#NewTextFormatter>)
+  - [func \(f \*TextFormatter\) Format\(entry \*Entry\) \(\[\]byte, error\)](<#TextFormatter.Format>)
+- [type UUIDGenerator](<#UUIDGenerator>)
+  - [func \(g \*UUIDGenerator\) Generate\(\) string](<#UUIDGenerator.Generate>)
+- [type WriterHandler](<#WriterHandler>)
+  - [func NewWriterHandler\(writer io.Writer, formatter Formatter, level Level\) \*WriterHandler](<#NewWriterHandler>)
+  - [func \(h \*WriterHandler\) Close\(\) error](<#WriterHandler.Close>)
+  - [func \(h \*WriterHandler\) Handle\(entry \*Entry\) bool](<#WriterHandler.Handle>)
 
 
 ## Constants
 
-<a name="LevelTrace"></a>Constants for additional log levels not provided by the standard slog package.
+<a name="FieldTimestamp"></a>Schema field names \- these are the canonical names used in JSON output
 
 ```go
 const (
-    // LevelTrace is a level below DEBUG for extremely verbose diagnostic information
-    LevelTrace slog.Level = slog.LevelDebug - 5
-
-    // LevelFatal is a level above ERROR that indicates a fatal error condition
-    // which will cause the application to terminate after logging
-    LevelFatal slog.Level = slog.LevelError + 1
+    FieldTimestamp = "ts"
+    FieldLevel     = "level"
+    FieldMessage   = "msg"
+    FieldLogger    = "logger"
+    FieldSource    = "source"
 )
 ```
 
 ## Variables
 
-<a name="CONSOLEON"></a>
+<a name="ReservedKeys"></a>ReservedKeys are field names reserved by the logging schema. These keys cannot be overwritten by user\-provided fields.
 
 ```go
-var (
+var ReservedKeys = map[string]bool{
+    "ts":     true,
+    "level":  true,
+    "msg":    true,
+    "logger": true,
+    "source": true,
+    "caller": true,
+}
+```
 
-    // consoleOn determines whether console output is enabled
-    CONSOLEON = true
+<a name="FilterReservedKeys"></a>
+## func [FilterReservedKeys](<https://github.com/aN0mad/go-logo/blob/main/schema.go#L42>)
 
-    // outputs is the list of writers to send log output to
-    OUTPUTS []io.Writer
+```go
+func FilterReservedKeys(fields map[string]interface{}) map[string]interface{}
+```
 
-    // includeSource determines whether to include source file and line information in logs
-    INCLUDESOURCE = false
+FilterReservedKeys returns a new map with reserved keys removed. This is a safe operation that prevents schema violations.
 
-    // includeStackTraces determines whether to include stack traces in logs
-    INCLUDESTACKTRACES = false
+<a name="GenerateRequestID"></a>
+## func [GenerateRequestID](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L76>)
 
-    // logLevel is the minimum log level that will be output
-    LOGLEVEL = slog.LevelInfo
+```go
+func GenerateRequestID() string
+```
 
-    // useJSONFormat determines whether to output logs in JSON format
-    USEJSONFORMAT = false
+GenerateRequestID generates a new request ID using the default generator.
 
-    // jsonPretty determines whether JSON output should be pretty-printed
-    JSONPRETTY = false
+<a name="IsReservedKey"></a>
+## func [IsReservedKey](<https://github.com/aN0mad/go-logo/blob/main/schema.go#L20>)
 
-    // colorEnabled determines whether to use colored output in console logs
-    COLORENABLED = true
+```go
+func IsReservedKey(key string) bool
+```
 
-    // fileWriters tracks all lumberjack loggers for proper closing
-    FILEWRITERS []*lumberjack.Logger
+IsReservedKey returns true if the key is reserved by the schema.
 
-    // Predefined log levels for convenience
-    LevelInfo  = slog.LevelInfo
-    LevelDebug = slog.LevelDebug
-    LevelError = slog.LevelError
+<a name="LevelColor"></a>
+## func [LevelColor](<https://github.com/aN0mad/go-logo/blob/main/color.go#L125>)
+
+```go
+func LevelColor(level Level) string
+```
+
+LevelColor returns the color for a log level
+
+<a name="LevelColorBold"></a>
+## func [LevelColorBold](<https://github.com/aN0mad/go-logo/blob/main/color.go#L145>)
+
+```go
+func LevelColorBold(level Level) string
+```
+
+LevelColorBold returns the bold color for a log level
+
+<a name="OpenFile"></a>
+## func [OpenFile](<https://github.com/aN0mad/go-logo/blob/main/file.go#L144>)
+
+```go
+func OpenFile(path string, perm os.FileMode) (*os.File, error)
+```
+
+OpenFile opens or creates a file for writing logs with appropriate permissions. This is a helper function for cases where you need more control over file creation.
+
+<a name="RequestIDFromContext"></a>
+## func [RequestIDFromContext](<https://github.com/aN0mad/go-logo/blob/main/context.go#L50>)
+
+```go
+func RequestIDFromContext(ctx context.Context) string
+```
+
+RequestIDFromContext retrieves the request ID from the context. Returns an empty string if no request ID is found.
+
+<a name="SetRequestIDGenerator"></a>
+## func [SetRequestIDGenerator](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L81>)
+
+```go
+func SetRequestIDGenerator(generator RequestIDGenerator)
+```
+
+SetRequestIDGenerator sets the default request ID generator.
+
+<a name="ValidateFields"></a>
+## func [ValidateFields](<https://github.com/aN0mad/go-logo/blob/main/schema.go#L25>)
+
+```go
+func ValidateFields(fields map[string]interface{}) error
+```
+
+ValidateFields checks for reserved key conflicts and returns an error if any are found.
+
+<a name="WithLogger"></a>
+## func [WithLogger](<https://github.com/aN0mad/go-logo/blob/main/context.go#L17>)
+
+```go
+func WithLogger(ctx context.Context, logger *Logger) context.Context
+```
+
+WithLogger adds a logger to the context. This allows passing a logger through the request lifecycle.
+
+<a name="WithRequestID"></a>
+## func [WithRequestID](<https://github.com/aN0mad/go-logo/blob/main/context.go#L41>)
+
+```go
+func WithRequestID(ctx context.Context, requestID string) context.Context
+```
+
+WithRequestID adds a request ID to the context. The request ID can be used for request tracing and correlation.
+
+<a name="BaseHandler"></a>
+## type [BaseHandler](<https://github.com/aN0mad/go-logo/blob/main/handler.go#L21-L23>)
+
+BaseHandler provides common handler functionality.
+
+```go
+type BaseHandler struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewBaseHandler"></a>
+### func [NewBaseHandler](<https://github.com/aN0mad/go-logo/blob/main/handler.go#L26>)
+
+```go
+func NewBaseHandler(level Level) *BaseHandler
+```
+
+NewBaseHandler creates a new base handler with the specified minimum level.
+
+<a name="BaseHandler.Close"></a>
+### func \(\*BaseHandler\) [Close](<https://github.com/aN0mad/go-logo/blob/main/handler.go#L43>)
+
+```go
+func (h *BaseHandler) Close() error
+```
+
+Close is a no\-op for the base handler.
+
+<a name="BaseHandler.Enabled"></a>
+### func \(\*BaseHandler\) [Enabled](<https://github.com/aN0mad/go-logo/blob/main/handler.go#L38>)
+
+```go
+func (h *BaseHandler) Enabled(level Level) bool
+```
+
+Enabled returns whether this handler will process the given level.
+
+<a name="BaseHandler.Level"></a>
+### func \(\*BaseHandler\) [Level](<https://github.com/aN0mad/go-logo/blob/main/handler.go#L33>)
+
+```go
+func (h *BaseHandler) Level() Level
+```
+
+Level returns the minimum level this handler will process.
+
+<a name="Caller"></a>
+## type [Caller](<https://github.com/aN0mad/go-logo/blob/main/entry.go#L18-L22>)
+
+Caller contains source location information.
+
+```go
+type Caller struct {
+    File     string
+    Line     int
+    Function string
+}
+```
+
+<a name="ColorMode"></a>
+## type [ColorMode](<https://github.com/aN0mad/go-logo/blob/main/color.go#L29>)
+
+ColorMode determines how colors are applied
+
+```go
+type ColorMode int
+```
+
+<a name="ColorAuto"></a>
+
+```go
+const (
+    // ColorAuto automatically detects terminal color support
+    ColorAuto ColorMode = iota
+    // ColorAlways always uses colors
+    ColorAlways
+    // ColorNever never uses colors
+    ColorNever
 )
 ```
 
-<a name="Version"></a>Version represents the current version of the logo package. It follows semantic versioning \(MAJOR.MINOR.PATCH\).
+<a name="ColorSupport"></a>
+## type [ColorSupport](<https://github.com/aN0mad/go-logo/blob/main/color.go#L41-L43>)
+
+ColorSupport determines if the writer supports colors
 
 ```go
-var Version = "1.0.0"
-```
-
-<a name="Close"></a>
-## func [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L413>)
-
-```go
-func Close() error
-```
-
-Close properly closes all resources used by the logger. This ensures that all log messages are flushed and file handles are closed. It should be called before the application exits.
-
-Returns:
-
-- error: Any error encountered while closing resources
-
-<a name="GetCurrentLevel"></a>
-## func [GetCurrentLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/levels.go#L43>)
-
-```go
-func GetCurrentLevel(logger *Logger) slog.Level
-```
-
-GetCurrentLevel returns the log level configured for a logger. When used with the global logger, it returns the global log level. When used with a specific logger instance, it returns that logger's level.
-
-Parameters:
-
-- logger: Optional specific logger to get level from \(can be nil for global logger\)
-
-Returns:
-
-- slog.Level: The current log level
-
-<a name="Init"></a>
-## func [Init](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L135>)
-
-```go
-func Init(opts ...LoggerOption)
-```
-
-Init initializes the global default logger with the given options. This configures a single global logger instance used by L\(\). To create independent loggers with their own configurations, use NewLogger\(\) instead.
-
-<a name="IsLevelEnabled"></a>
-## func [IsLevelEnabled](<https://github.com/aN0mad/go-logo/blob/main/logo/levels.go#L22>)
-
-```go
-func IsLevelEnabled(level slog.Level, logger *Logger) bool
-```
-
-IsLevelEnabled checks if a log level is enabled based on the current logger configuration. When used with the global logger, it checks against the global log level. When used with a specific logger instance, it checks against that logger's level.
-
-Parameters:
-
-- level: The log level to check
-- logger: Optional specific logger to check against \(can be nil for global logger\)
-
-Returns:
-
-- bool: True if the level is enabled, false otherwise
-
-<a name="NewCustomTextHandler"></a>
-## func [NewCustomTextHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L36>)
-
-```go
-func NewCustomTextHandler(out io.Writer, opts *slog.HandlerOptions) slog.Handler
-```
-
-NewCustomTextHandler creates a new text handler with ordered attributes.
-
-Parameters:
-
-- out: The io.Writer where log entries will be written
-- opts: Handler options including log level and attribute replacements
-
-Returns:
-
-- slog.Handler: A handler implementation for text\-formatted logs
-
-<a name="NewJSONHandler"></a>
-## func [NewJSONHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L36>)
-
-```go
-func NewJSONHandler(out io.Writer, opts *slog.HandlerOptions, pretty bool) slog.Handler
-```
-
-NewJSONHandler creates a new JSON handler with optional pretty printing.
-
-Parameters:
-
-- out: The io.Writer where JSON log entries will be written
-- opts: Handler options including log level and attribute replacements
-- pretty: Whether to format the JSON with indentation for better readability
-
-Returns:
-
-- slog.Handler: A handler implementation for JSON\-formatted logs
-
-<a name="NewLumberjackWriter"></a>
-## func [NewLumberjackWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_file.go#L21>)
-
-```go
-func NewLumberjackWriter(filename string, maxSize, maxBackups, maxAge int, compress bool) *lumberjack.Logger
-```
-
-NewLumberjackWriter creates a new log writer with rotation capabilities. It configures a lumberjack logger with the specified parameters for log rotation.
-
-Parameters:
-
-- filename: Path to the log file
-- maxSize: Maximum size of log files in megabytes before rotation
-- maxBackups: Maximum number of old log files to retain
-- maxAge: Maximum number of days to retain old log files
-- compress: Whether to compress rotated log files
-
-Returns:
-
-- \*lumberjack.Logger: Configured log writer with rotation support
-
-<a name="SetGlobalLevel"></a>
-## func [SetGlobalLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/levels.go#L60>)
-
-```go
-func SetGlobalLevel(level slog.Level)
-```
-
-SetGlobalLevel sets the log level for the global logger. This affects all subsequent log messages through the global logger \(via L\(\)\).
-
-Parameters:
-
-- level: The new log level to set
-
-<a name="SetLoggerLevel"></a>
-## func [SetLoggerLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/levels.go#L71>)
-
-```go
-func SetLoggerLevel(logger *Logger, level slog.Level)
-```
-
-SetLoggerLevel sets the log level for a specific logger instance.
-
-Parameters:
-
-- logger: The logger instance to configure
-- level: The new log level to set
-
-<a name="ChannelWriter"></a>
-## type [ChannelWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L13-L15>)
-
-ChannelWriter is an io.Writer that sends log messages to a channel. It can be used to pass log messages to custom processing routines.
-
-```go
-type ChannelWriter struct {
+type ColorSupport struct {
     // contains filtered or unexported fields
 }
 ```
 
-<a name="NewChannelWriter"></a>
-### func [NewChannelWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L24>)
+<a name="NewColorSupport"></a>
+### func [NewColorSupport](<https://github.com/aN0mad/go-logo/blob/main/color.go#L46>)
 
 ```go
-func NewChannelWriter(ch chan string) *ChannelWriter
+func NewColorSupport(writer io.Writer, mode ColorMode) *ColorSupport
 ```
 
-NewChannelWriter creates a new writer that sends log messages to the given channel.
+NewColorSupport creates a new color support detector
 
-Parameters:
-
-- ch: The channel to which log messages will be sent
-
-Returns:
-
-- \*ChannelWriter: A channel writer that implements io.Writer
-
-<a name="ChannelWriter.Write"></a>
-### func \(\*ChannelWriter\) [Write](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_channel.go#L37>)
+<a name="ColorSupport.Colorize"></a>
+### func \(\*ColorSupport\) [Colorize](<https://github.com/aN0mad/go-logo/blob/main/color.go#L65>)
 
 ```go
-func (cw *ChannelWriter) Write(p []byte) (int, error)
+func (c *ColorSupport) Colorize(text, color string) string
 ```
 
-Write implements the io.Writer interface for ChannelWriter. It sends the log message to the channel associated with this writer.
+Colorize wraps text in ANSI color codes if colors are enabled
 
-Parameters:
-
-- p: The byte slice containing the log message
-
-Returns:
-
-- int: The number of bytes processed
-- error: Any error encountered during writing \(or nil if successful\)
-
-<a name="CustomTextHandler"></a>
-## type [CustomTextHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L20-L26>)
-
-CustomTextHandler is a slog.Handler that formats logs as structured text. It provides control over attribute ordering and supports all standard slog.Handler functionality.
+<a name="ColorSupport.Enabled"></a>
+### func \(\*ColorSupport\) [Enabled](<https://github.com/aN0mad/go-logo/blob/main/color.go#L60>)
 
 ```go
-type CustomTextHandler struct {
+func (c *ColorSupport) Enabled() bool
+```
+
+Enabled returns whether colors are enabled
+
+<a name="Config"></a>
+## type [Config](<https://github.com/aN0mad/go-logo/blob/main/config.go#L11-L44>)
+
+Config holds the logging configuration that can be set via CLI flags or environment variables.
+
+```go
+type Config struct {
+    // Level is the minimum log level (debug, info, warn, error)
+    Level string
+
+    // Console enables console output
+    Console bool
+
+    // ConsoleFormat is the console output format (pretty, text)
+    ConsoleFormat string
+
+    // ConsoleColor controls color output (auto, always, never)
+    ConsoleColor string
+
+    // FilePath is the path to the log file
+    FilePath string
+
+    // FileLevel is the minimum level for file output
+    FileLevel string
+
+    // FileFormat is the file output format (json, text)
+    FileFormat string
+
+    // Profile is a predefined configuration profile (dev, prod)
+    Profile string
+
+    // Source enables source location in logs
+    Source bool
+
+    // Rotation settings for file output
+    RotationMaxSize    int
+    RotationMaxAge     int
+    RotationMaxBackups int
+    RotationCompress   bool
+}
+```
+
+<a name="NewConfig"></a>
+### func [NewConfig](<https://github.com/aN0mad/go-logo/blob/main/config.go#L47>)
+
+```go
+func NewConfig() *Config
+```
+
+NewConfig creates a new configuration with defaults.
+
+<a name="Config.ApplyProfile"></a>
+### func \(\*Config\) [ApplyProfile](<https://github.com/aN0mad/go-logo/blob/main/config.go#L121>)
+
+```go
+func (c *Config) ApplyProfile(profile string) error
+```
+
+ApplyProfile applies a predefined configuration profile. Profiles are applied first, then individual flags override.
+
+<a name="Config.BuildLogger"></a>
+### func \(\*Config\) [BuildLogger](<https://github.com/aN0mad/go-logo/blob/main/config.go#L200>)
+
+```go
+func (c *Config) BuildLogger() (*Logger, error)
+```
+
+BuildLogger creates a logger from the configuration.
+
+<a name="Config.LoadFromEnv"></a>
+### func \(\*Config\) [LoadFromEnv](<https://github.com/aN0mad/go-logo/blob/main/config.go#L89>)
+
+```go
+func (c *Config) LoadFromEnv()
+```
+
+LoadFromEnv loads configuration from environment variables. Environment variables follow the pattern: LOG\_\<FLAG\_NAME\> \(e.g., LOG\_LEVEL, LOG\_CONSOLE\_FORMAT\)
+
+<a name="Config.RegisterFlags"></a>
+### func \(\*Config\) [RegisterFlags](<https://github.com/aN0mad/go-logo/blob/main/config.go#L67>)
+
+```go
+func (c *Config) RegisterFlags(fs *flag.FlagSet)
+```
+
+RegisterFlags registers CLI flags for the configuration. Call this before flag.Parse\(\).
+
+<a name="Config.Validate"></a>
+### func \(\*Config\) [Validate](<https://github.com/aN0mad/go-logo/blob/main/config.go#L152>)
+
+```go
+func (c *Config) Validate() error
+```
+
+Validate checks the configuration for invalid values.
+
+<a name="ConsoleHandler"></a>
+## type [ConsoleHandler](<https://github.com/aN0mad/go-logo/blob/main/console.go#L9-L11>)
+
+ConsoleHandler is a specialized handler for console output with pretty formatting.
+
+```go
+type ConsoleHandler struct {
+    *WriterHandler
+}
+```
+
+<a name="NewConsoleHandler"></a>
+### func [NewConsoleHandler](<https://github.com/aN0mad/go-logo/blob/main/console.go#L24>)
+
+```go
+func NewConsoleHandler(opts ...ConsoleHandlerOption) *ConsoleHandler
+```
+
+NewConsoleHandler creates a new console handler with pretty formatting and color support.
+
+<a name="NewConsoleHandlerWithWriter"></a>
+### func [NewConsoleHandlerWithWriter](<https://github.com/aN0mad/go-logo/blob/main/console.go#L51>)
+
+```go
+func NewConsoleHandlerWithWriter(writer io.Writer, colorMode ColorMode, level Level) *ConsoleHandler
+```
+
+NewConsoleHandlerWithWriter creates a console handler with a custom writer. This is useful for testing or directing output to custom destinations.
+
+<a name="ConsoleHandlerOption"></a>
+## type [ConsoleHandlerOption](<https://github.com/aN0mad/go-logo/blob/main/console.go#L14>)
+
+ConsoleHandlerOption configures a ConsoleHandler
+
+```go
+type ConsoleHandlerOption func(*ConsoleHandler)
+```
+
+<a name="WithConsoleLevel"></a>
+### func [WithConsoleLevel](<https://github.com/aN0mad/go-logo/blob/main/console.go#L17>)
+
+```go
+func WithConsoleLevel(level Level) ConsoleHandlerOption
+```
+
+WithConsoleLevel sets the minimum level for the console handler
+
+<a name="Entry"></a>
+## type [Entry](<https://github.com/aN0mad/go-logo/blob/main/entry.go#L8-L15>)
+
+Entry represents a single log event with its metadata and fields.
+
+```go
+type Entry struct {
+    Timestamp time.Time
+    Level     Level
+    Message   string
+    Logger    string
+    Fields    map[string]interface{}
+    Caller    *Caller
+}
+```
+
+<a name="NewEntry"></a>
+### func [NewEntry](<https://github.com/aN0mad/go-logo/blob/main/entry.go#L25>)
+
+```go
+func NewEntry(level Level, message string, logger string, fields map[string]interface{}) *Entry
+```
+
+NewEntry creates a new log entry with the given parameters.
+
+<a name="Entry.Clone"></a>
+### func \(\*Entry\) [Clone](<https://github.com/aN0mad/go-logo/blob/main/entry.go#L42>)
+
+```go
+func (e *Entry) Clone() *Entry
+```
+
+Clone creates a deep copy of the entry.
+
+<a name="Entry.WithCaller"></a>
+### func \(\*Entry\) [WithCaller](<https://github.com/aN0mad/go-logo/blob/main/entry.go#L36>)
+
+```go
+func (e *Entry) WithCaller(caller *Caller) *Entry
+```
+
+WithCaller adds caller information to the entry.
+
+<a name="Field"></a>
+## type [Field](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L212-L215>)
+
+Field represents a key\-value pair for structured logging.
+
+```go
+type Field struct {
+    Key   string
+    Value interface{}
+}
+```
+
+<a name="F"></a>
+### func [F](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L218>)
+
+```go
+func F(key string, value interface{}) Field
+```
+
+F is a shorthand for creating a Field.
+
+<a name="FileHandler"></a>
+## type [FileHandler](<https://github.com/aN0mad/go-logo/blob/main/file.go#L44-L47>)
+
+FileHandler is a handler that writes logs to a file with rotation support.
+
+```go
+type FileHandler struct {
+    *WriterHandler
     // contains filtered or unexported fields
 }
 ```
 
-<a name="CustomTextHandler.Enabled"></a>
-### func \(\*CustomTextHandler\) [Enabled](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L56>)
+<a name="NewFileHandler"></a>
+### func [NewFileHandler](<https://github.com/aN0mad/go-logo/blob/main/file.go#L74>)
 
 ```go
-func (h *CustomTextHandler) Enabled(ctx context.Context, level slog.Level) bool
+func NewFileHandler(path string, formatter Formatter, opts ...FileHandlerOption) (*FileHandler, error)
 ```
 
-Enabled implements Handler.Enabled. It checks if the given log level should be processed based on the configured minimum level.
+NewFileHandler creates a new file handler with optional rotation. The file handler writes JSON\-formatted logs to the specified file path.
 
-Parameters:
-
-- ctx: The context for the logging operation
-- level: The log level to check
-
-Returns:
-
-- bool: True if the log level should be processed, false otherwise
-
-<a name="CustomTextHandler.Handle"></a>
-### func \(\*CustomTextHandler\) [Handle](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L70>)
+<a name="FileHandler.Close"></a>
+### func \(\*FileHandler\) [Close](<https://github.com/aN0mad/go-logo/blob/main/file.go#L105>)
 
 ```go
-func (h *CustomTextHandler) Handle(ctx context.Context, r slog.Record) error
+func (h *FileHandler) Close() error
 ```
 
-Handle implements Handler.Handle. It processes a log record and outputs it in text format.
+Close closes the file handler and flushes any remaining data.
 
-Parameters:
-
-- ctx: The context for the logging operation
-- r: The log record to process
-
-Returns:
-
-- error: Any error encountered during formatting or writing
-
-<a name="CustomTextHandler.WithAttrs"></a>
-### func \(\*CustomTextHandler\) [WithAttrs](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L171>)
+<a name="FileHandler.Rotate"></a>
+### func \(\*FileHandler\) [Rotate](<https://github.com/aN0mad/go-logo/blob/main/file.go#L114>)
 
 ```go
-func (h *CustomTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler
+func (h *FileHandler) Rotate() error
 ```
 
-WithAttrs implements Handler.WithAttrs. It returns a new handler with the given attributes.
+Rotate causes the file handler to close the existing log file and immediately create a new one. This is useful for manual rotation triggers.
 
-Parameters:
+<a name="FileHandlerOption"></a>
+## type [FileHandlerOption](<https://github.com/aN0mad/go-logo/blob/main/file.go#L50>)
 
-- attrs: The attributes to add to the handler
-
-Returns:
-
-- slog.Handler: A new handler instance with the attributes
-
-<a name="CustomTextHandler.WithGroup"></a>
-### func \(\*CustomTextHandler\) [WithGroup](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_custom.go#L208>)
+FileHandlerOption configures a FileHandler
 
 ```go
-func (h *CustomTextHandler) WithGroup(name string) slog.Handler
+type FileHandlerOption func(*FileHandler)
 ```
 
-WithGroup implements Handler.WithGroup. It returns a handler that adds the given group name to the attribute key path.
+<a name="WithFileLevel"></a>
+### func [WithFileLevel](<https://github.com/aN0mad/go-logo/blob/main/file.go#L66>)
 
-Parameters:
+```go
+func WithFileLevel(level Level) FileHandlerOption
+```
 
-- name: The group name
+WithFileLevel sets the minimum level for the file handler
 
-Returns:
+<a name="WithRotation"></a>
+### func [WithRotation](<https://github.com/aN0mad/go-logo/blob/main/file.go#L53>)
 
-- slog.Handler: A new handler that includes the specified group
+```go
+func WithRotation(config *RotationConfig) FileHandlerOption
+```
+
+WithRotation sets the rotation configuration for the file handler.
+
+<a name="Formatter"></a>
+## type [Formatter](<https://github.com/aN0mad/go-logo/blob/main/formatter.go#L10-L12>)
+
+Formatter defines how log entries are formatted for output.
+
+```go
+type Formatter interface {
+    Format(entry *Entry) ([]byte, error)
+}
+```
+
+<a name="Handler"></a>
+## type [Handler](<https://github.com/aN0mad/go-logo/blob/main/handler.go#L5-L18>)
+
+Handler processes log entries and outputs them to a destination. Handlers define the minimum log level, formatting, and output destination.
+
+```go
+type Handler interface {
+    // Handle processes a log entry.
+    // Returns true if the entry was handled, false if it was filtered.
+    Handle(entry *Entry) bool
+
+    // Level returns the minimum level this handler will process.
+    Level() Level
+
+    // Enabled returns whether this handler will process the given level.
+    Enabled(level Level) bool
+
+    // Close releases any resources held by the handler.
+    Close() error
+}
+```
+
+<a name="JSONFormatter"></a>
+## type [JSONFormatter](<https://github.com/aN0mad/go-logo/blob/main/json.go#L10-L13>)
+
+JSONFormatter formats log entries as JSON according to the schema.
+
+```go
+type JSONFormatter struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewJSONFormatter"></a>
+### func [NewJSONFormatter](<https://github.com/aN0mad/go-logo/blob/main/json.go#L33>)
+
+```go
+func NewJSONFormatter(opts ...JSONFormatterOption) *JSONFormatter
+```
+
+NewJSONFormatter creates a new JSON formatter.
+
+<a name="JSONFormatter.Format"></a>
+### func \(\*JSONFormatter\) [Format](<https://github.com/aN0mad/go-logo/blob/main/json.go#L57>)
+
+```go
+func (f *JSONFormatter) Format(entry *Entry) ([]byte, error)
+```
+
+Format formats a log entry as JSON according to the schema. Schema fields \(required\):
+
+- ts: RFC3339Nano UTC timestamp
+- level: log level string
+- msg: log message
+- logger: logger name
+
+Optional fields:
+
+- source: source location \(if enabled and available\)
+
+User fields are added as top\-level keys after filtering reserved keys.
+
+<a name="JSONFormatterOption"></a>
+## type [JSONFormatterOption](<https://github.com/aN0mad/go-logo/blob/main/json.go#L16>)
+
+JSONFormatterOption configures a JSONFormatter
+
+```go
+type JSONFormatterOption func(*JSONFormatter)
+```
+
+<a name="WithJSONSource"></a>
+### func [WithJSONSource](<https://github.com/aN0mad/go-logo/blob/main/json.go#L26>)
+
+```go
+func WithJSONSource(enabled bool) JSONFormatterOption
+```
+
+WithJSONSource enables source location in JSON output
+
+<a name="WithPrettyJSON"></a>
+### func [WithPrettyJSON](<https://github.com/aN0mad/go-logo/blob/main/json.go#L19>)
+
+```go
+func WithPrettyJSON(pretty bool) JSONFormatterOption
+```
+
+WithPrettyJSON enables pretty\-printed JSON output
 
 <a name="JSONHandler"></a>
-## type [JSONHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L20-L25>)
+## type [JSONHandler](<https://github.com/aN0mad/go-logo/blob/main/json.go#L101-L103>)
 
-JSONHandler is a slog.Handler that formats logs as JSON. It provides control over pretty\-printing and supports all standard slog.Handler functionality.
+JSONHandler is a specialized handler for JSON output.
 
 ```go
 type JSONHandler struct {
-    // contains filtered or unexported fields
+    *WriterHandler
 }
 ```
 
-<a name="JSONHandler.Enabled"></a>
-### func \(\*JSONHandler\) [Enabled](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L55>)
+<a name="NewJSONHandler"></a>
+### func [NewJSONHandler](<https://github.com/aN0mad/go-logo/blob/main/json.go#L106>)
 
 ```go
-func (h *JSONHandler) Enabled(ctx context.Context, level slog.Level) bool
+func NewJSONHandler(writer interface{}, level Level, opts ...JSONFormatterOption) *JSONHandler
 ```
 
-Enabled implements slog.Handler interface. It checks if the given log level should be processed based on the configured minimum level.
+NewJSONHandler creates a new JSON handler with the specified writer and options.
 
-Parameters:
+<a name="Level"></a>
+## type [Level](<https://github.com/aN0mad/go-logo/blob/main/level.go#L6>)
 
-- ctx: The context for the logging operation
-- level: The log level to check
-
-Returns:
-
-- bool: True if the log level should be processed, false otherwise
-
-<a name="JSONHandler.Handle"></a>
-### func \(\*JSONHandler\) [Handle](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L69>)
+Level represents the severity of a log message.
 
 ```go
-func (h *JSONHandler) Handle(ctx context.Context, r slog.Record) error
+type Level int
 ```
 
-Handle implements slog.Handler interface. It processes a log record and outputs it as JSON.
-
-Parameters:
-
-- ctx: The context for the logging operation
-- r: The log record to process
-
-Returns:
-
-- error: Any error encountered during formatting or writing
-
-<a name="JSONHandler.WithAttrs"></a>
-### func \(\*JSONHandler\) [WithAttrs](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L155>)
+<a name="LevelTrace"></a>
 
 ```go
-func (h *JSONHandler) WithAttrs(attrs []slog.Attr) slog.Handler
+const (
+    LevelTrace Level = iota
+    LevelDebug
+    LevelInfo
+    LevelWarn
+    LevelError
+    LevelFatal
+)
 ```
 
-WithAttrs implements slog.Handler interface. It returns a new handler with the given attributes.
-
-Parameters:
-
-- attrs: The attributes to add to the handler
-
-Returns:
-
-- slog.Handler: A new handler instance with the attributes
-
-<a name="JSONHandler.WithGroup"></a>
-### func \(\*JSONHandler\) [WithGroup](<https://github.com/aN0mad/go-logo/blob/main/logo/handler_json.go#L168>)
+<a name="ParseLevel"></a>
+### func [ParseLevel](<https://github.com/aN0mad/go-logo/blob/main/level.go#L38>)
 
 ```go
-func (h *JSONHandler) WithGroup(name string) slog.Handler
+func ParseLevel(s string) Level
 ```
 
-WithGroup implements slog.Handler interface. It returns a handler that adds the given group name to the attribute key path.
+ParseLevel converts a string to a Level.
 
-Parameters:
+<a name="Level.String"></a>
+### func \(Level\) [String](<https://github.com/aN0mad/go-logo/blob/main/level.go#L18>)
 
-- name: The group name
+```go
+func (l Level) String() string
+```
 
-Returns:
-
-- slog.Handler: A handler that adds the group name to the attribute key path
+String returns the string representation of the level.
 
 <a name="Logger"></a>
-## type [Logger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L127-L130>)
+## type [Logger](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L11-L18>)
 
-Logger is the main logging structure that wraps slog.Logger. It provides structured logging capabilities with additional convenience methods for different log levels.
+Logger is the main entry point for logging. It is immutable and safe for concurrent use.
 
 ```go
 type Logger struct {
-    *slog.Logger
     // contains filtered or unexported fields
 }
 ```
 
+<a name="ContextWithFields"></a>
+### func [ContextWithFields](<https://github.com/aN0mad/go-logo/blob/main/context.go#L64>)
+
+```go
+func ContextWithFields(ctx context.Context, fields ...Field) *Logger
+```
+
+ContextWithFields returns a logger from context with additional fields. This is a convenience method that combines FromContext and With.
+
+<a name="FromContext"></a>
+### func [FromContext](<https://github.com/aN0mad/go-logo/blob/main/context.go#L26>)
+
+```go
+func FromContext(ctx context.Context) *Logger
+```
+
+FromContext retrieves the logger from the context. If no logger is found, returns a default logger with no handlers.
+
 <a name="L"></a>
-### func [L](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L474>)
+### func [L](<https://github.com/aN0mad/go-logo/blob/main/context.go#L71>)
 
 ```go
-func L() *Logger
+func L(ctx context.Context) *Logger
 ```
 
-L returns the current logger instance. It is safe to call concurrently and returns the same logger instance. This is the main entry point for logging in the application.
+L is a shorthand for FromContext. Useful for quick logging from context.
 
-Returns:
-
-- \*Logger: The configured Logger instance
-
-<a name="NewLogger"></a>
-### func [NewLogger](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L146>)
+<a name="New"></a>
+### func [New](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L21>)
 
 ```go
-func NewLogger(opts ...LoggerOption) *Logger
+func New(opts ...Option) *Logger
 ```
 
-NewLogger creates a new independent logger instance with its own configuration. Unlike Init\(\) which configures a global singleton logger, NewLogger returns a completely separate logger that can be configured differently from other loggers.
+New creates a new logger with the given options.
 
 <a name="Logger.Close"></a>
-### func \(\*Logger\) [Close](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L426>)
+### func \(\*Logger\) [Close](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L207>)
 
 ```go
 func (l *Logger) Close() error
 ```
 
-Close properly closes all resources used by this logger instance
+Close closes the logger and its router.
+
+<a name="Logger.Debug"></a>
+### func \(\*Logger\) [Debug](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L78>)
+
+```go
+func (l *Logger) Debug(msg string, fields ...Field)
+```
+
+Debug logs a debug\-level message.
+
+<a name="Logger.Error"></a>
+### func \(\*Logger\) [Error](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L93>)
+
+```go
+func (l *Logger) Error(msg string, fields ...Field)
+```
+
+Error logs an error\-level message.
 
 <a name="Logger.Fatal"></a>
-### func \(\*Logger\) [Fatal](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L528>)
+### func \(\*Logger\) [Fatal](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L98>)
 
 ```go
-func (l *Logger) Fatal(msg string, attrs ...any)
+func (l *Logger) Fatal(msg string, fields ...Field)
 ```
 
-Fatal logs the message and exits the program with status 1. This should be used for critical errors that require immediate termination.
+Fatal logs a fatal\-level message.
 
-Parameters:
+<a name="Logger.Info"></a>
+### func \(\*Logger\) [Info](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L83>)
 
-- msg: The message to log
-- attrs: Additional attributes to include with the log entry, provided as alternating keys and values
+```go
+func (l *Logger) Info(msg string, fields ...Field)
+```
 
-Returns:
-
-- None: This function does not return as it calls os.Exit\(1\)
+Info logs an info\-level message.
 
 <a name="Logger.Trace"></a>
-### func \(\*Logger\) [Trace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L491>)
+### func \(\*Logger\) [Trace](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L73>)
 
 ```go
-func (l *Logger) Trace(msg string, attrs ...any)
+func (l *Logger) Trace(msg string, fields ...Field)
 ```
 
-Trace logs with a level below DEBUG and includes a stack trace. This is useful for very detailed diagnostic information typically needed during development or troubleshooting.
+Trace logs a trace\-level message.
 
-Parameters:
-
-- msg: The message to log
-- attrs: Additional attributes to include with the log entry, provided as alternating keys and values
-
-Returns:
-
-- None
-
-<a name="LoggerOption"></a>
-## type [LoggerOption](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L122>)
-
-LoggerOption is a functional option type for configuring the logger. This allows for a flexible and extensible way to configure the logger with various options.
+<a name="Logger.Warn"></a>
+### func \(\*Logger\) [Warn](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L88>)
 
 ```go
-type LoggerOption func(*loggerContext)
+func (l *Logger) Warn(msg string, fields ...Field)
 ```
 
-<a name="AddChannelOutput"></a>
-### func [AddChannelOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L462>)
+Warn logs a warning\-level message.
+
+<a name="Logger.With"></a>
+### func \(\*Logger\) [With](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L104>)
 
 ```go
-func AddChannelOutput(ch chan string) LoggerOption
+func (l *Logger) With(fields ...Field) *Logger
 ```
 
-AddChannelOutput adds a channel output to the logger. This allows log messages to be sent to a channel for further processing or handling.
+With creates a new logger with additional fields. The original logger is not modified.
 
-Parameters:
-
-- ch: A channel of strings that will receive log messages
-
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to add channel output
-
-<a name="AddConsoleOutput"></a>
-### func [AddConsoleOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L289>)
+<a name="Logger.WithName"></a>
+### func \(\*Logger\) [WithName](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L129>)
 
 ```go
-func AddConsoleOutput() LoggerOption
+func (l *Logger) WithName(name string) *Logger
 ```
 
-AddConsoleOutput adds console output to the logger. This is useful when you want to explicitly enable console output even when other outputs are configured.
+WithName creates a new logger with a different name.
 
-Returns:
+<a name="Option"></a>
+## type [Option](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L42>)
 
-- LoggerOption: A function that can be passed to Init\(\) to enable console output
-
-<a name="AddFileOutput"></a>
-### func [AddFileOutput](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L375>)
+Option is a functional option for configuring a logger.
 
 ```go
-func AddFileOutput(filename string, maxSize, maxBackups, maxAge int, compress bool) LoggerOption
+type Option func(*Logger)
 ```
 
-AddFileOutput adds file output to the logger with rotation support. This allows log messages to be written to a file, with automatic rotation when the file reaches the specified maximum size.
-
-Parameters:
-
-- filepath: The path to the log file
-- maxSizeMB: Maximum size of the log file in megabytes before rotation
-- maxBackups: Maximum number of old log files to retain
-- maxAgeDays: Maximum number of days to retain old log files
-- compress: If true, rotated log files will be compressed using gzip
-
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to add file output
-
-<a name="AddSource"></a>
-### func [AddSource](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L319>)
+<a name="WithConsole"></a>
+### func [WithConsole](<https://github.com/aN0mad/go-logo/blob/main/console.go#L62>)
 
 ```go
-func AddSource() LoggerOption
+func WithConsole(opts ...ConsoleHandlerOption) Option
 ```
 
-AddSource enables adding source file and line information to log messages. This helps with debugging by showing where each log message originated from.
+WithConsole is a logger option that adds a console handler
 
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to include source information
-
-<a name="DisableColors"></a>
-### func [DisableColors](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L237>)
+<a name="WithFields"></a>
+### func [WithFields](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L59>)
 
 ```go
-func DisableColors() LoggerOption
+func WithFields(fields map[string]interface{}) Option
 ```
 
-DisableColors disables colored output in console logs. This is useful for environments where ANSI color codes might cause issues, such as when logging to files or in environments that don't support colors.
+WithFields sets initial fields for the logger.
 
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to disable colored output
-
-<a name="DisableConsole"></a>
-### func [DisableConsole](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L356>)
+<a name="WithJSONFile"></a>
+### func [WithJSONFile](<https://github.com/aN0mad/go-logo/blob/main/file.go#L122>)
 
 ```go
-func DisableConsole() LoggerOption
+func WithJSONFile(path string, opts ...FileHandlerOption) Option
 ```
 
-DisableConsole disables the console output. This is useful for applications that do not require console logging, such as background services or daemons.
+WithJSONFile is a logger option that adds a JSON file handler with rotation.
 
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to disable console output
-
-<a name="EnableLogLevelTrace"></a>
-### func [EnableLogLevelTrace](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L248>)
+<a name="WithName"></a>
+### func [WithName](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L52>)
 
 ```go
-func EnableLogLevelTrace() LoggerOption
+func WithName(name string) Option
 ```
 
-EnableLogLevelTrace enables trace logging level \(which is a level below DEBUG\). This is useful for capturing detailed information during development or debugging.
+WithName sets the logger name.
 
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to set the trace log level
-
-<a name="EnableStackTraces"></a>
-### func [EnableStackTraces](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L260>)
+<a name="WithRouter"></a>
+### func [WithRouter](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L45>)
 
 ```go
-func EnableStackTraces() LoggerOption
+func WithRouter(router *Router) Option
 ```
 
-EnableStackTraces enables stack trace inclusion in log messages. When enabled, a stack trace will be included with log messages, which can be helpful for debugging and error tracking.
+WithRouter sets the router for the logger.
 
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to enable stack traces
-
-<a name="SetFileHandlerForTesting"></a>
-### func [SetFileHandlerForTesting](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L629>)
+<a name="WithSource"></a>
+### func [WithSource](<https://github.com/aN0mad/go-logo/blob/main/logger.go#L66>)
 
 ```go
-func SetFileHandlerForTesting(w io.Writer) LoggerOption
+func WithSource(enabled bool) Option
 ```
 
-SetFileHandlerForTesting is a special helper for test files to ensure proper handling of file outputs during testing
+WithSource enables source location tracking.
 
-Parameters:
+<a name="PrettyFormatter"></a>
+## type [PrettyFormatter](<https://github.com/aN0mad/go-logo/blob/main/pretty.go#L12-L16>)
 
-- w: The io.Writer to use for log output during testing
-
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to set a test file handler
-
-<a name="SetLevel"></a>
-### func [SetLevel](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L225>)
+PrettyFormatter formats log entries in a human\-readable, colorized format.
 
 ```go
-func SetLevel(level slog.Level) LoggerOption
-```
-
-SetLevel sets the minimum log level that will be logged. Any log messages with a level lower than this will be ignored.
-
-Parameters:
-
-- level: The minimum log level to log \(e.g., slog.LevelDebug, slog.LevelInfo\)
-
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to configure the logger
-
-<a name="UseCustomHandler"></a>
-### func [UseCustomHandler](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L333>)
-
-```go
-func UseCustomHandler(h slog.Handler) LoggerOption
-```
-
-UseCustomHandler replaces the handler with a custom slog.Handler. This allows for complete customization of the logging behavior.
-
-Parameters:
-
-- h: A custom slog.Handler implementation
-
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) or NewLogger\(\) to use a custom handler
-
-<a name="UseJSON"></a>
-### func [UseJSON](<https://github.com/aN0mad/go-logo/blob/main/logo/logo.go#L274>)
-
-```go
-func UseJSON(pretty bool) LoggerOption
-```
-
-UseJSON configures the logger to output logs in JSON format.
-
-Parameters:
-
-- pretty: If true, JSON will be formatted with indentation for better readability. If false, JSON will be compact without extra whitespace.
-
-Returns:
-
-- LoggerOption: A function that can be passed to Init\(\) to use JSON formatting
-
-<a name="StyledConsoleWriter"></a>
-## type [StyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L21-L24>)
-
-StyledConsoleWriter is an io.Writer that formats log messages with styles and colors. It detects log levels and applies appropriate styling to make logs more readable.
-
-```go
-type StyledConsoleWriter struct {
+type PrettyFormatter struct {
     // contains filtered or unexported fields
 }
 ```
 
-<a name="NewDefaultStyledConsoleWriter"></a>
-### func [NewDefaultStyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L50>)
+<a name="NewPrettyFormatter"></a>
+### func [NewPrettyFormatter](<https://github.com/aN0mad/go-logo/blob/main/pretty.go#L44>)
 
 ```go
-func NewDefaultStyledConsoleWriter(w io.Writer) *StyledConsoleWriter
+func NewPrettyFormatter(colorSupport *ColorSupport, opts ...PrettyFormatterOption) *PrettyFormatter
 ```
 
-NewDefaultStyledConsoleWriter creates a styled console writer with default settings. It creates a writer that uses global configuration rather than a specific context.
+NewPrettyFormatter creates a new pretty formatter with color support detection.
 
-Parameters:
-
-- out: The output writer where log messages will be written
-
-Returns:
-
-- \*StyledConsoleWriter: A new console writer with default styling configuration
-
-<a name="NewStyledConsoleWriter"></a>
-### func [NewStyledConsoleWriter](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L35>)
+<a name="PrettyFormatter.Format"></a>
+### func \(\*PrettyFormatter\) [Format](<https://github.com/aN0mad/go-logo/blob/main/pretty.go#L60>)
 
 ```go
-func NewStyledConsoleWriter(w io.Writer, ctx *loggerContext) *StyledConsoleWriter
+func (f *PrettyFormatter) Format(entry *Entry) ([]byte, error)
 ```
 
-NewStyledConsoleWriter creates a new console writer that applies styling to log output. It applies colors and formatting based on log level and configuration.
+Format formats a log entry in a pretty, human\-readable format. Example output: 15:04:05.123 INFO service started version=1.0.0
 
-Parameters:
+<a name="PrettyFormatterOption"></a>
+## type [PrettyFormatterOption](<https://github.com/aN0mad/go-logo/blob/main/pretty.go#L19>)
 
-- out: The output writer where log messages will be written
-- ctx: Logger context containing configuration options like color settings
-
-Returns:
-
-- \*StyledConsoleWriter: A new console writer with styling capabilities
-
-<a name="StyledConsoleWriter.Write"></a>
-### func \(\*StyledConsoleWriter\) [Write](<https://github.com/aN0mad/go-logo/blob/main/logo/writer_console.go#L78>)
+PrettyFormatterOption configures a PrettyFormatter
 
 ```go
-func (cw *StyledConsoleWriter) Write(p []byte) (int, error)
+type PrettyFormatterOption func(*PrettyFormatter)
 ```
 
-Write implements the io.Writer interface for StyledConsoleWriter. It formats the log message with appropriate styles and colors based on the log level.
+<a name="WithColorMode"></a>
+### func [WithColorMode](<https://github.com/aN0mad/go-logo/blob/main/pretty.go#L22>)
 
-Parameters:
+```go
+func WithColorMode(mode ColorMode) PrettyFormatterOption
+```
 
-- p: The byte slice containing the log message to write
+WithColorMode sets the color mode for the formatter
 
-Returns:
+<a name="WithSourceInfo"></a>
+### func [WithSourceInfo](<https://github.com/aN0mad/go-logo/blob/main/pretty.go#L37>)
 
-- int: The number of bytes written
-- error: Any error encountered during writing
+```go
+func WithSourceInfo(enabled bool) PrettyFormatterOption
+```
+
+WithSourceInfo enables source location in output
+
+<a name="WithTimeFormat"></a>
+### func [WithTimeFormat](<https://github.com/aN0mad/go-logo/blob/main/pretty.go#L30>)
+
+```go
+func WithTimeFormat(format string) PrettyFormatterOption
+```
+
+WithTimeFormat sets a custom time format
+
+<a name="RequestIDGenerator"></a>
+## type [RequestIDGenerator](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L14-L16>)
+
+RequestIDGenerator defines the interface for generating request IDs.
+
+```go
+type RequestIDGenerator interface {
+    Generate() string
+}
+```
+
+<a name="DefaultRequestIDGenerator"></a>DefaultRequestIDGenerator is the default generator used by middleware.
+
+```go
+var DefaultRequestIDGenerator RequestIDGenerator = &UUIDGenerator{}
+```
+
+<a name="RotationConfig"></a>
+## type [RotationConfig](<https://github.com/aN0mad/go-logo/blob/main/file.go#L10-L30>)
+
+RotationConfig configures log file rotation behavior.
+
+```go
+type RotationConfig struct {
+    // MaxSize is the maximum size in megabytes of the log file before it gets rotated.
+    // Default is 100 MB.
+    MaxSize int
+
+    // MaxAge is the maximum number of days to retain old log files based on the
+    // timestamp encoded in their filename. The default is not to remove old log files.
+    MaxAge int
+
+    // MaxBackups is the maximum number of old log files to retain. The default
+    // is to retain all old log files (though MaxAge may still cause them to get deleted.)
+    MaxBackups int
+
+    // Compress determines if the rotated log files should be compressed using gzip.
+    // The default is not to perform compression.
+    Compress bool
+
+    // LocalTime determines if the time used for formatting the timestamps in
+    // backup files is the computer's local time. The default is to use UTC time.
+    LocalTime bool
+}
+```
+
+<a name="DefaultRotationConfig"></a>
+### func [DefaultRotationConfig](<https://github.com/aN0mad/go-logo/blob/main/file.go#L33>)
+
+```go
+func DefaultRotationConfig() *RotationConfig
+```
+
+DefaultRotationConfig returns sensible defaults for log rotation.
+
+<a name="Router"></a>
+## type [Router](<https://github.com/aN0mad/go-logo/blob/main/router.go#L9-L12>)
+
+Router dispatches log entries to multiple handlers. It implements a fan\-out pattern where each entry is sent to all registered handlers.
+
+```go
+type Router struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewRouter"></a>
+### func [NewRouter](<https://github.com/aN0mad/go-logo/blob/main/router.go#L15>)
+
+```go
+func NewRouter(handlers ...Handler) *Router
+```
+
+NewRouter creates a new router with the given handlers.
+
+<a name="Router.AddHandler"></a>
+### func \(\*Router\) [AddHandler](<https://github.com/aN0mad/go-logo/blob/main/router.go#L35>)
+
+```go
+func (r *Router) AddHandler(handler Handler)
+```
+
+AddHandler adds a new handler to the router.
+
+<a name="Router.Close"></a>
+### func \(\*Router\) [Close](<https://github.com/aN0mad/go-logo/blob/main/router.go#L52>)
+
+```go
+func (r *Router) Close() error
+```
+
+Close closes all handlers.
+
+<a name="Router.Handlers"></a>
+### func \(\*Router\) [Handlers](<https://github.com/aN0mad/go-logo/blob/main/router.go#L42>)
+
+```go
+func (r *Router) Handlers() []Handler
+```
+
+Handlers returns a copy of the current handlers.
+
+<a name="Router.Route"></a>
+### func \(\*Router\) [Route](<https://github.com/aN0mad/go-logo/blob/main/router.go#L22>)
+
+```go
+func (r *Router) Route(entry *Entry)
+```
+
+Route sends the log entry to all registered handlers.
+
+<a name="SequentialGenerator"></a>
+## type [SequentialGenerator](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L54-L56>)
+
+SequentialGenerator generates sequential request IDs. Useful for testing and debugging, not recommended for production.
+
+```go
+type SequentialGenerator struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewSequentialGenerator"></a>
+### func [NewSequentialGenerator](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L59>)
+
+```go
+func NewSequentialGenerator(prefix string) *SequentialGenerator
+```
+
+NewSequentialGenerator creates a new sequential ID generator with an optional prefix.
+
+<a name="SequentialGenerator.Generate"></a>
+### func \(\*SequentialGenerator\) [Generate](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L64>)
+
+```go
+func (g *SequentialGenerator) Generate() string
+```
+
+Generate creates a sequential ID.
+
+<a name="ShortIDGenerator"></a>
+## type [ShortIDGenerator](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L39>)
+
+ShortIDGenerator generates short hex\-based request IDs. Shorter than UUIDs but still unique enough for most use cases.
+
+```go
+type ShortIDGenerator struct{}
+```
+
+<a name="ShortIDGenerator.Generate"></a>
+### func \(\*ShortIDGenerator\) [Generate](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L42>)
+
+```go
+func (g *ShortIDGenerator) Generate() string
+```
+
+Generate creates a short hex ID \(16 characters\).
+
+<a name="TextFormatter"></a>
+## type [TextFormatter](<https://github.com/aN0mad/go-logo/blob/main/formatter.go#L15>)
+
+TextFormatter formats log entries as human\-readable text.
+
+```go
+type TextFormatter struct{}
+```
+
+<a name="NewTextFormatter"></a>
+### func [NewTextFormatter](<https://github.com/aN0mad/go-logo/blob/main/formatter.go#L18>)
+
+```go
+func NewTextFormatter() *TextFormatter
+```
+
+NewTextFormatter creates a new text formatter.
+
+<a name="TextFormatter.Format"></a>
+### func \(\*TextFormatter\) [Format](<https://github.com/aN0mad/go-logo/blob/main/formatter.go#L23>)
+
+```go
+func (f *TextFormatter) Format(entry *Entry) ([]byte, error)
+```
+
+Format formats a log entry as text.
+
+<a name="UUIDGenerator"></a>
+## type [UUIDGenerator](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L19>)
+
+UUIDGenerator generates UUIDs for request IDs.
+
+```go
+type UUIDGenerator struct{}
+```
+
+<a name="UUIDGenerator.Generate"></a>
+### func \(\*UUIDGenerator\) [Generate](<https://github.com/aN0mad/go-logo/blob/main/requestid.go#L22>)
+
+```go
+func (g *UUIDGenerator) Generate() string
+```
+
+Generate creates a new UUID v4.
+
+<a name="WriterHandler"></a>
+## type [WriterHandler](<https://github.com/aN0mad/go-logo/blob/main/formatter.go#L44-L49>)
+
+WriterHandler is a handler that writes formatted entries to an io.Writer.
+
+```go
+type WriterHandler struct {
+    *BaseHandler
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewWriterHandler"></a>
+### func [NewWriterHandler](<https://github.com/aN0mad/go-logo/blob/main/formatter.go#L52>)
+
+```go
+func NewWriterHandler(writer io.Writer, formatter Formatter, level Level) *WriterHandler
+```
+
+NewWriterHandler creates a new handler that writes to the given writer.
+
+<a name="WriterHandler.Close"></a>
+### func \(\*WriterHandler\) [Close](<https://github.com/aN0mad/go-logo/blob/main/formatter.go#L81>)
+
+```go
+func (h *WriterHandler) Close() error
+```
+
+Close closes the handler. If the underlying writer implements io.Closer, it will be closed as well.
+
+<a name="WriterHandler.Handle"></a>
+### func \(\*WriterHandler\) [Handle](<https://github.com/aN0mad/go-logo/blob/main/formatter.go#L61>)
+
+```go
+func (h *WriterHandler) Handle(entry *Entry) bool
+```
+
+Handle processes and writes a log entry.
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
